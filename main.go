@@ -7,11 +7,10 @@ import (
 var cli = arg.MustParse(&args)
 
 func main() {
-
-	switch cli.Subcommand().(type) {
-	case *collectCmd:
+	switch {
+	case args.Collect != nil:
 		handleCollect(cli, args)
-	case processCmd:
+	case args.Process != nil:
 		handleProcess(cli, args)
 	}
 }

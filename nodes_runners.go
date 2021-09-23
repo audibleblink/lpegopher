@@ -15,5 +15,5 @@ type Runner struct {
 	Type    string     `gogm:"name=type"`
 }
 
-// type Task struct{ Runner }
-// type Service struct{ Runner }
+type Task struct{ Runner }
+type Service struct{ Runner }
