@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/Jeffail/gabs/v2 v2.6.1 // indirect
 	github.com/adam-hanna/arrayOperations v0.2.6 // indirect
 	github.com/alexflint/go-scalar v1.0.0 // indirect
 	github.com/cornelk/hashmap v1.0.1 // indirect
