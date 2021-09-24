@@ -17,7 +17,7 @@ type Runner struct {
 	Context *User      `gogm:"direction=outgoing;relationship=EXECUTES_AS"`
 	Name    string     `gogm:"name=name"`
 	Exe     *EXE       `gogm:"direction=incoming;relationship=EXECUTED_FROM"`
-	Parent  *Directory `gogm:"direction=incoming;relationship=HOSTS_PES"`
+	ExeDir  *Directory `gogm:"direction=incoming;relationship=HOSTS_PES"`
 	Type    string     `gogm:"name=type"`
 }
 
@@ -74,7 +74,7 @@ func NewRunnerFromJson(jsonLine []byte) (runner *Runner, err error) {
 
 	runner.Context = user
 	runner.Exe = exeNode
-	runner.Parent = dir
+	runner.ExeDir = dir
 
 	return
 }
