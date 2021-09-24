@@ -4,9 +4,10 @@ import (
 	"github.com/mindstand/gogm/v2"
 )
 
-func newNeoSession() (sess gogm.SessionV2, err error) {
+func init() {
+
 	config := gogm.Config{
-		IndexStrategy:     gogm.ASSERT_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
+		IndexStrategy:     gogm.IGNORE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
 		PoolSize:          50,
 		Port:              args.Process.Port,
 		IsCluster:         false, //tells it whether or not to use `bolt+routing`
@@ -26,17 +27,23 @@ func newNeoSession() (sess gogm.SessionV2, err error) {
 		&Directory{},
 		&EXE{},
 		&DLL{},
-		&Task{},
-		&Service{},
+		&Runner{},
+		// &Task{},
+		// &Service{},
 	)
 	if err != nil {
-		return
+		panic(err)
 	}
+
+	gogm.SetGlobalGogm(driver)
+}
+
+func newNeoSession() (sess gogm.SessionV2, err error) {
 
 	sessConf := gogm.SessionConfig{
 		AccessMode:   gogm.AccessModeWrite,
 		DatabaseName: args.Process.Database,
 	}
 
-	return driver.NewSessionV2(sessConf)
+	return gogm.G().NewSessionV2(sessConf)
 }

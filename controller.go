@@ -30,12 +30,13 @@ func processServices(args argType) (err error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		runner := &Runner{}
+		var runner *Runner
 		runner, err = NewRunnerFromJson(scanner.Bytes())
 		if err != nil {
 			return
 		}
-		err = runner.Save()
+
+		err = runner.Merge("name", runner.Name)
 		if err != nil {
 			return
 		}

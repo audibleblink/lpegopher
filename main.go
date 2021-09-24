@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/alexflint/go-arg"
 )
 
@@ -13,7 +15,7 @@ func main() {
 	case args.Process != nil:
 		err := handleProcess(cli, args)
 		if err != nil {
-			// panic(err)
+			log.Fatal(err)
 		}
 	}
 }

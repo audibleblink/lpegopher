@@ -12,6 +12,7 @@ import (
 
 // Runners can be Tasks, Services, or AutoRuns
 type Runner struct {
+	// Querier
 	gogm.BaseNode
 
 	Context *User      `gogm:"direction=outgoing;relationship=EXECUTES_AS"`
@@ -19,6 +20,16 @@ type Runner struct {
 	Exe     *EXE       `gogm:"direction=incoming;relationship=EXECUTED_FROM"`
 	ExeDir  *Directory `gogm:"direction=incoming;relationship=HOSTS_PES"`
 	Type    string     `gogm:"name=type"`
+}
+
+func (r *Runner) RunsExeAs(user *User) error {
+	r.Context = user
+	return r.save()
+}
+
+func (r *Runner) save() (err error) {
+	sess, err := newNeoSession()
+	return sess.Save(context.Background(), r)
 }
 
 func NewRunnerFromJson(jsonLine []byte) (runner *Runner, err error) {
@@ -63,29 +74,57 @@ func NewRunnerFromJson(jsonLine []byte) (runner *Runner, err error) {
 
 	user := &User{}
 	user.Name = userName
-
-	exeNode := &EXE{}
-	exeNode.Name = exe
-	exeNode.Path = fullPath
-
-	dir := &Directory{}
-	dir.Name = filepath.Base(parent)
-	dir.Path = parent
-
-	runner.Context = user
-	runner.Exe = exeNode
-	runner.ExeDir = dir
-
-	return
-}
-
-func (r *Runner) Save() (err error) {
-	sess, err := newNeoSession()
+	err = user.Merge("name", user.Name)
 	if err != nil {
 		return
 	}
 
-	return sess.Save(context.Background(), r)
+	exeNode := &EXE{}
+	exeNode.Name = exe
+	exeNode.Path = fullPath
+	err = exeNode.Merge("path", exeNode.Path)
+	if err != nil {
+		return
+	}
+
+	dir := &Directory{}
+	dir.Name = filepath.Base(parent)
+	dir.Path = parent
+	err = dir.Merge("path", dir.Path)
+	if err != nil {
+		return
+	}
+
+	err = runner.Merge("name", runner.Name)
+	if err != nil {
+		return
+	}
+
+	err = dir.Hosts(runner)
+	if err != nil {
+		return
+	}
+	err = dir.Add(exeNode)
+	if err != nil {
+		return
+	}
+	err = runner.RunsExeAs(user)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (x *Runner) Merge(uniquePropName, propValue string) (err error) {
+	nodeType := "Runner"
+	sess, err := newNeoSession()
+	if err != nil {
+		return err
+	}
+
+	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
+	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
+	return sess.Query(context.Background(), query, nil, x)
 }
 
 type Task struct{ Runner }

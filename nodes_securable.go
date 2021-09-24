@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"fmt"
+
 	gogm "github.com/mindstand/gogm/v2"
 )
 
@@ -33,17 +36,37 @@ type Directory struct {
 	HostsPEs      *Runner `gogm:"direction=outgoing;relationship=HOSTS_PES"`
 }
 
-func (d *Directory) Hosts(runner *Runner) {
+func (d *Directory) Hosts(runner *Runner) error {
 	d.HostsPEs = runner
+	return d.save()
 }
 
-func (d *Directory) Add(ifile interface{}) {
+func (d *Directory) Add(ifile interface{}) error {
 	switch f := ifile.(type) {
 	case *EXE:
 		d.ContainedExes = append(d.ContainedExes, f)
 	case *DLL:
 		d.ContainedDlls = append(d.ContainedDlls, f)
 	}
+
+	return d.save()
+}
+
+func (d *Directory) save() (err error) {
+	sess, err := newNeoSession()
+	return sess.Save(context.Background(), d)
+}
+
+func (x *Directory) Merge(uniquePropName, propValue string) (err error) {
+	nodeType := "Directory"
+	sess, err := newNeoSession()
+	if err != nil {
+		return err
+	}
+
+	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
+	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
+	return sess.Query(context.Background(), query, nil, x)
 }
 
 type EXE struct {
@@ -58,6 +81,18 @@ type EXE struct {
 
 func (f *EXE) GetsRunBy(runner *Runner) {
 	f.ExecutesFrom = runner
+}
+
+func (x *EXE) Merge(uniquePropName, propValue string) (err error) {
+	nodeType := "EXE"
+	sess, err := newNeoSession()
+	if err != nil {
+		return err
+	}
+
+	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
+	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
+	return sess.Query(context.Background(), query, nil, x)
 }
 
 type DLL struct {
