@@ -30,11 +30,15 @@ func processServices(args argType) (err error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		runner, err := NewRunnerFromJson(scanner.Bytes())
+		runner := &Runner{}
+		runner, err = NewRunnerFromJson(scanner.Bytes())
 		if err != nil {
-			return err
+			return
 		}
 		err = runner.Save()
+		if err != nil {
+			return
+		}
 	}
 	return
 }

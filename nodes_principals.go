@@ -6,7 +6,7 @@ import (
 
 type Principal struct {
 	gogm.BaseNode
-	Name string `gogm:"unique;index;name=name"`
+	Name string `gogm:"name=name"`
 
 	WriteOwnerDir   *Directory `gogm:"direction=outgoing;relationship=WRITE_OWNER"`
 	WriteDACLDir    *Directory `gogm:"direction=outgoing;relationship=WRITE_DACL"`

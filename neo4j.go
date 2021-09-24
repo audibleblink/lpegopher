@@ -4,30 +4,39 @@ import (
 	"github.com/mindstand/gogm/v2"
 )
 
-func newNeoSession() *gogm.SessionV2 {
+func newNeoSession() (sess gogm.SessionV2, err error) {
 	config := gogm.Config{
-		IndexStrategy:     gogm.IGNORE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
+		IndexStrategy:     gogm.ASSERT_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
 		PoolSize:          50,
-		Port:              7687,
+		Port:              args.Process.Port,
 		IsCluster:         false, //tells it whether or not to use `bolt+routing`
-		Host:              "neo4j.i.hyrule.link",
-		Password:          "password",
-		Username:          "neo4j",
-		Protocol:          "bolt+s",
+		Host:              args.Process.Host,
+		Password:          args.Process.Password,
+		Username:          args.Process.Username,
+		Protocol:          args.Process.Protocol,
 		UseSystemCertPool: true,
 		EnableLogParams:   true,
 	}
 
-	_gogm, err := gogm.New(&config, gogm.UUIDPrimaryKeyStrategy, &User{}, &Group{}, &Directory{}, &EXE{}, &DLL{}, &Task{}, &Service{})
+	driver, err := gogm.New(
+		&config,
+		gogm.DefaultPrimaryKeyStrategy,
+		&User{},
+		&Group{},
+		&Directory{},
+		&EXE{},
+		&DLL{},
+		&Task{},
+		&Service{},
+	)
 	if err != nil {
-		panic(err)
+		return
 	}
 
-	//param is readonly, we're going to make stuff so we're going to do read write
-	sess, err := _gogm.NewSessionV2(gogm.SessionConfig{AccessMode: gogm.AccessModeWrite})
-	if err != nil {
-		panic(err)
+	sessConf := gogm.SessionConfig{
+		AccessMode:   gogm.AccessModeWrite,
+		DatabaseName: args.Process.Database,
 	}
 
-	return &sess
+	return driver.NewSessionV2(sessConf)
 }

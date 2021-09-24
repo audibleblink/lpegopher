@@ -6,6 +6,3 @@ import (
 
 func handleCollect(cli *arg.Parser, a argType) {
 }
-
-func handleProcess(cli *arg.Parser, a argType) {
-}

@@ -12,7 +12,7 @@ type collectCmd struct {
 	Services *collectServicesCmd `arg:"subcommand"`
 	Exes     *collectPECmd       `arg:"subcommand"`
 	Dlls     *collectPECmd       `arg:"subcommand"`
-	All      bool                `help:"Collect everything into files: \{tasks,services,exes,dlls\}.json"`
+	All      bool                `arg:"--all" help:"Collect everything into files: {tasks,services,exes,dlls}.json"`
 }
 
 type collectTaskCmd struct{ fileOut }

@@ -6,6 +6,7 @@ type neoConnection struct {
 	Port     int    `arg:"-p,env:NEO_PORT" default:"7687"`
 	Username string `arg:"-u,env:NEO_USER" default:"neo4j"`
 	Protocol string `arg:"-t,env:NEO_PROTO" default:"bolt+s"`
+	Database string `arg:"-t,env:NEO_DBNAME" default:"neo4j"`
 }
 
 type processCmd struct {

@@ -11,6 +11,9 @@ func main() {
 	case args.Collect != nil:
 		handleCollect(cli, args)
 	case args.Process != nil:
-		handleProcess(cli, args)
+		err := handleProcess(cli, args)
+		if err != nil {
+			// panic(err)
+		}
 	}
 }

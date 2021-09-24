@@ -11,7 +11,7 @@ type containableIFile struct {
 type securableIFile struct {
 	gogm.BaseNode
 	Name string `gogm:"name=name"`
-	Path string `gogm:"name=path;unique"`
+	Path string `gogm:"name=path"`
 	// Parent *Directory `gogm:"direction=incoming;relationship=CONTAINS"`
 
 	PermsWriteOwnerG   *Group `gogm:"direction=incoming;relationship=WRITE_OWNER"`
