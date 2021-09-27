@@ -1,9 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
-
 	gogm "github.com/mindstand/gogm/v2"
 )
 
@@ -30,7 +27,7 @@ type Principal struct {
 	GenericWriteDll *DLL `gogm:"direction=outgoing;relationship=GENERIC_WRITE"`
 }
 
-func (p *Principal) CanWriteOwner(ifile interface{}) {
+func (p *Principal) SetPermCanWriteOwner(ifile interface{}) {
 	switch f := ifile.(type) {
 	case *EXE:
 		p.WriteOwnerExe = f
@@ -41,7 +38,7 @@ func (p *Principal) CanWriteOwner(ifile interface{}) {
 	}
 }
 
-func (p *Principal) CanWriteDACL(ifile interface{}) {
+func (p *Principal) SetPermCanWriteDACL(ifile interface{}) {
 	switch f := ifile.(type) {
 	case *EXE:
 		p.WriteOwnerExe = f
@@ -50,35 +47,6 @@ func (p *Principal) CanWriteDACL(ifile interface{}) {
 	case *Directory:
 		p.WriteOwnerDir = f
 	}
-}
-
-type User struct {
-	Principal
-
-	Groups       []*Group `gogm:"direction=outgoing;relationship=MEMBER_OF"`
-	ExecutedFrom *Runner  `gogm:"direction=incoming;relationship=EXECUTES_AS"`
-}
-
-func (x *User) Merge(uniquePropName, propValue string) (err error) {
-	nodeType := "User"
-	sess, err := newNeoSession()
-	if err != nil {
-		return err
-	}
-
-	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
-	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
-	return sess.Query(context.Background(), query, nil, x)
-}
-
-func (u *User) JoinGroup(group *Group) {
-	u.Groups = append(u.Groups, group)
-}
-
-type Group struct {
-	Principal
-
-	Users []*User `gogm:"direction=incoming;relationship=MEMBER_OF"`
 }
 
 //////////////////////////////////

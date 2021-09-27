@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/Jeffail/gabs/v2"
 
@@ -15,8 +14,8 @@ type Runner struct {
 	// Querier
 	gogm.BaseNode
 
+	Name    string     `gogm:"name=name;unique"`
 	Context *User      `gogm:"direction=outgoing;relationship=EXECUTES_AS"`
-	Name    string     `gogm:"name=name"`
 	Exe     *EXE       `gogm:"direction=incoming;relationship=EXECUTED_FROM"`
 	ExeDir  *Directory `gogm:"direction=incoming;relationship=HOSTS_PES"`
 	Type    string     `gogm:"name=type"`
@@ -27,27 +26,23 @@ func (r *Runner) RunsExeAs(user *User) error {
 	return r.save()
 }
 
-func (r *Runner) save() (err error) {
-	sess, err := newNeoSession()
-	return sess.Save(context.Background(), r)
-}
-
-func NewRunnerFromJson(jsonLine []byte) (runner *Runner, err error) {
+func NewRunnerFromJson(jsonLine []byte) (err error) {
 	line, err := gabs.ParseJSON(jsonLine)
 	if err != nil {
 		return
 	}
 
 	var (
-		userName string
-		exe      string
-		parent   string
-		fullPath string
+		userName   string
+		exe        string
+		parent     string
+		runnerName string
+		runnerType string
+		fullPath   string
 
 		ok bool
 	)
-	runner = &Runner{}
-	if runner.Name, ok = line.Path("Name").Data().(string); !ok {
+	if runnerName, ok = line.Path("Name").Data().(string); !ok {
 		err = fmt.Errorf("could not create Runner with JSON property: %s", "Name")
 		return
 	}
@@ -72,49 +67,77 @@ func NewRunnerFromJson(jsonLine []byte) (runner *Runner, err error) {
 		return
 	}
 
+	if runnerType, ok = line.Path("Type").Data().(string); !ok {
+		err = fmt.Errorf("could not create Runner with JSON property: %s", "parent")
+		return
+	}
+
 	user := &User{}
-	user.Name = userName
-	err = user.Merge("name", user.Name)
+	err = user.Merge("name", userName)
 	if err != nil {
 		return
 	}
 
 	exeNode := &EXE{}
-	exeNode.Name = exe
-	exeNode.Path = fullPath
-	err = exeNode.Merge("path", exeNode.Path)
+	err = exeNode.Merge("path", fullPath)
+	if err != nil {
+		return
+	}
+	err = exeNode.SetName(exe)
 	if err != nil {
 		return
 	}
 
 	dir := &Directory{}
-	dir.Name = filepath.Base(parent)
 	dir.Path = parent
 	err = dir.Merge("path", dir.Path)
 	if err != nil {
 		return
 	}
-
-	err = runner.Merge("name", runner.Name)
+	err = dir.SetName(winPathBase(parent))
 	if err != nil {
 		return
 	}
 
-	err = dir.Hosts(runner)
+	runner := &Runner{}
+	err = runner.Merge("name", runnerName)
 	if err != nil {
 		return
 	}
+	err = runner.SetType(runnerType)
+	if err != nil {
+		return
+	}
+
+	// Associate a directory that hosts PEs for a particular Runner
+	err = dir.HostsPEsFor(runner)
+	if err != nil {
+		return
+	}
+
+	// Creats the edges for Directories CONTAINS a PE
 	err = dir.Add(exeNode)
 	if err != nil {
 		return
 	}
+
+	// Associate the Context (or User) from which the Runner executes
 	err = runner.RunsExeAs(user)
 	if err != nil {
 		return
 	}
+
+	// Associate the EXE as getting run by a service
+	err = exeNode.GetsRunBy(runner)
+	if err != nil {
+		return
+	}
+
 	return
 }
 
+// Merge will either create or retreive the node based on the key-valie pair provides
+// In this case, the Runner struct designates the "name" field as unique
 func (x *Runner) Merge(uniquePropName, propValue string) (err error) {
 	nodeType := "Runner"
 	sess, err := newNeoSession()
@@ -127,5 +150,21 @@ func (x *Runner) Merge(uniquePropName, propValue string) (err error) {
 	return sess.Query(context.Background(), query, nil, x)
 }
 
-type Task struct{ Runner }
-type Service struct{ Runner }
+// type Task struct{ Runner }
+// type Service struct{ Runner }
+
+func (x *Runner) SetType(name string) error {
+	x.Type = name
+	return x.save()
+}
+
+func (x *Runner) save() (err error) {
+	if x.Id == nil {
+		return fmt.Errorf("no ID provided. ensure this node exists before attempting to update a property")
+	}
+	sess, err := newNeoSession()
+	if err != nil {
+		return err
+	}
+	return sess.Save(context.Background(), x)
+}
