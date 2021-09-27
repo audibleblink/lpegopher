@@ -27,14 +27,9 @@ func (x *EXE) Merge(uniquePropName, propValue string) (err error) {
 		return err
 	}
 
-	params := make(map[string]interface{})
-	if x.Name != "" {
-		params["name"] = x.Name
-	}
-
 	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
 	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
-	return sess.Query(context.Background(), query, params, x)
+	return sess.Query(context.Background(), query, nil, x)
 }
 
 func (u *EXE) SetName(name string) error {

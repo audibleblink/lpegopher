@@ -15,10 +15,10 @@ type Runner struct {
 	gogm.BaseNode
 
 	Name    string     `gogm:"name=name;unique"`
+	Type    string     `gogm:"name=type"`
 	Context *User      `gogm:"direction=outgoing;relationship=EXECUTES_AS"`
 	Exe     *EXE       `gogm:"direction=incoming;relationship=EXECUTED_FROM"`
 	ExeDir  *Directory `gogm:"direction=incoming;relationship=HOSTS_PES"`
-	Type    string     `gogm:"name=type"`
 }
 
 func (r *Runner) RunsExeAs(user *User) error {
@@ -42,6 +42,7 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 
 		ok bool
 	)
+
 	if runnerName, ok = line.Path("Name").Data().(string); !ok {
 		err = fmt.Errorf("could not create Runner with JSON property: %s", "Name")
 		return
@@ -73,34 +74,34 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 	}
 
 	user := &User{}
-	err = user.Merge("name", userName)
+	err = user.Merge("name", lower(userName))
 	if err != nil {
 		return
 	}
 
 	exeNode := &EXE{}
-	err = exeNode.Merge("path", fullPath)
+	err = exeNode.Merge("path", pathFix(fullPath))
 	if err != nil {
 		return
 	}
-	err = exeNode.SetName(exe)
+	err = exeNode.SetName(lower(exe))
 	if err != nil {
 		return
 	}
 
 	dir := &Directory{}
-	dir.Path = parent
+	dir.Path = pathFix(parent)
 	err = dir.Merge("path", dir.Path)
 	if err != nil {
 		return
 	}
-	err = dir.SetName(winPathBase(parent))
+	err = dir.SetName(dir.Path)
 	if err != nil {
 		return
 	}
 
 	runner := &Runner{}
-	err = runner.Merge("name", runnerName)
+	err = runner.Merge("name", (runnerName))
 	if err != nil {
 		return
 	}
