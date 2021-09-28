@@ -1,8 +1,10 @@
-package main
+package node
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/audibleblink/pegopher/db"
 )
 
 type Directory struct {
@@ -33,7 +35,7 @@ func (d *Directory) Add(ifile interface{}) error {
 // In this case, the Directory struct designates the "path" field as unique
 func (x *Directory) Merge(uniquePropName, propValue string) (err error) {
 	nodeType := "Directory"
-	sess, err := newNeoSession()
+	sess, err := db.Session()
 	if err != nil {
 		return err
 	}
@@ -52,7 +54,7 @@ func (x *Directory) save() (err error) {
 	if x.Id == nil {
 		return fmt.Errorf("no ID provided. ensure this node exists before attempting to update a property")
 	}
-	sess, err := newNeoSession()
+	sess, err := db.Session()
 	if err != nil {
 		return err
 	}

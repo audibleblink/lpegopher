@@ -1,8 +1,10 @@
-package main
+package node
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/audibleblink/pegopher/db"
 )
 
 type User struct {
@@ -14,7 +16,7 @@ type User struct {
 
 func (x *User) Merge(uniquePropName, propValue string) (err error) {
 	nodeType := "User"
-	sess, err := newNeoSession()
+	sess, err := db.Session()
 	if err != nil {
 		return err
 	}
@@ -28,11 +30,11 @@ func (u *User) JoinGroup(group *Group) {
 	u.Groups = append(u.Groups, group)
 }
 
-func (x *User) save() (err error) {
+func (x *User) Save() (err error) {
 	if x.Id == nil {
 		return fmt.Errorf("no ID provided. ensure this node exists before attempting to update a property")
 	}
-	sess, err := newNeoSession()
+	sess, err := db.Session()
 	if err != nil {
 		return err
 	}

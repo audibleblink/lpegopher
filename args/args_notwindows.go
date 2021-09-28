@@ -1,13 +1,13 @@
 //go:build !windows
 
-package main
+package args
 
-type argType struct {
+type ArgType struct {
 	Collect *collectCmd `arg:"subcommand" help:"Only available on Windows"`
 	Process *processCmd `arg:"subcommand" help:"Process data and populate neo4j"`
 }
 
-var args = argType{}
+// var args = argType{}
 
 type dummy struct{}
 type collectCmd struct {

@@ -3,6 +3,7 @@ module github.com/audibleblink/pegopher
 go 1.17
 
 require (
+	github.com/Jeffail/gabs v1.4.0
 	github.com/alexflint/go-arg v1.4.2
 	github.com/capnspacehook/taskmaster v0.0.0-20210519235353-1629df7c85e9
 	github.com/mindstand/gogm/v2 v2.2.0
@@ -10,7 +11,6 @@ require (
 )
 
 require (
-	github.com/Jeffail/gabs/v2 v2.6.1 // indirect
 	github.com/adam-hanna/arrayOperations v0.2.6 // indirect
 	github.com/alexflint/go-scalar v1.0.0 // indirect
 	github.com/cornelk/hashmap v1.0.1 // indirect

@@ -1,11 +1,11 @@
-package main
+package args
 
-type argType struct {
+type ArgType struct {
 	Collect *collectCmd `arg:"subcommand" help:"Collect necsesary data"`
 	Process *processCmd `arg:"subcommand" help:"Process data and populate neo4j"`
 }
 
-var args = argType{}
+// var args = argType{}
 
 type collectCmd struct {
 	Tasks    *collectTaskCmd     `arg:"subcommand"`

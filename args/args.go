@@ -1,4 +1,4 @@
-package main
+package args
 
 type neoConnection struct {
 	Host     string `arg:"-d,env:NEO_HOST" default:"localhost"`

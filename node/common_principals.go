@@ -1,4 +1,4 @@
-package main
+package node
 
 import (
 	gogm "github.com/mindstand/gogm/v2"
@@ -44,7 +44,7 @@ type Principal struct {
 	GenericWriteDll *DLL `gogm:"direction=outgoing;relationship=GENERIC_WRITE"`
 }
 
-func (p *Principal) SetPermCanWriteOwner(ifile interface{}) *Principal {
+func (p *Principal) SetPermCanWriteOwner(ifile interface{}) {
 	switch f := ifile.(type) {
 	case *EXE:
 		p.WriteOwnerExe = f
@@ -53,7 +53,6 @@ func (p *Principal) SetPermCanWriteOwner(ifile interface{}) *Principal {
 	case *Directory:
 		p.WriteOwnerDir = f
 	}
-	return p
 }
 
 func (p *Principal) SetPermCanWriteDACL(ifile interface{}) {

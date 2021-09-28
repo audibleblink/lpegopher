@@ -1,4 +1,4 @@
-package main
+package collectors
 
 import (
 	"encoding/json"
@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/audibleblink/pegopher/collectors"
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
-func listServices() {
+func ListServices() {
 	svcMgr, err := mgr.Connect()
 	if err != nil {
 		log.Fatal(err)
@@ -32,7 +33,7 @@ func listServices() {
 		args := strings.Join(splitCmd[1:], " ")
 		context := conf.ServiceStartName
 
-		service := taskResult{
+		service := collectors.TaskResult{
 			Name:     conf.DisplayName,
 			Type:     "service",
 			Exe:      filepath.Base(path),

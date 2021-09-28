@@ -1,30 +1,12 @@
-package main
+package processor
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/Jeffail/gabs/v2"
-
-	"github.com/mindstand/gogm/v2"
+	"github.com/Jeffail/gabs"
+	"github.com/audibleblink/pegopher/node"
+	"github.com/audibleblink/pegopher/util"
 )
-
-// Runners can be Tasks, Services, or AutoRuns
-type Runner struct {
-	// Querier
-	gogm.BaseNode
-
-	Name    string     `gogm:"name=name;unique"`
-	Type    string     `gogm:"name=type"`
-	Context *User      `gogm:"direction=outgoing;relationship=EXECUTES_AS"`
-	Exe     *EXE       `gogm:"direction=incoming;relationship=EXECUTED_FROM"`
-	ExeDir  *Directory `gogm:"direction=incoming;relationship=HOSTS_PES"`
-}
-
-func (r *Runner) RunsExeAs(user *User) error {
-	r.Context = user
-	return r.save()
-}
 
 func NewRunnerFromJson(jsonLine []byte) (err error) {
 	line, err := gabs.ParseJSON(jsonLine)
@@ -62,36 +44,36 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 		err = fmt.Errorf("could not create Runner with JSON property: %s", "fullPath")
 		return
 	}
-	fullPath = pathFix(fullPath)
+	fullPath = util.PathFix(fullPath)
 
 	if parent, ok = line.Path("Parent").Data().(string); !ok {
 		err = fmt.Errorf("could not create Runner with JSON property: %s", "parent")
 		return
 	}
-	parent = pathFix(parent)
+	parent = util.PathFix(parent)
 
 	if runnerType, ok = line.Path("Type").Data().(string); !ok {
 		err = fmt.Errorf("could not create Runner with JSON property: %s", "parent")
 		return
 	}
 
-	user := &User{}
-	err = user.Merge("name", lower(userName))
+	user := &node.User{}
+	err = user.Merge("name", util.Lower(userName))
 	if err != nil {
 		return
 	}
 
-	exeNode := &EXE{}
+	exeNode := &node.EXE{}
 	err = exeNode.Merge("path", fullPath)
 	if err != nil {
 		return
 	}
-	err = exeNode.SetName(lower(exe))
+	err = exeNode.SetName(util.Lower(exe))
 	if err != nil {
 		return
 	}
 
-	dir := &Directory{}
+	dir := &node.Directory{}
 	dir.Path = parent
 	err = dir.Merge("path", dir.Path)
 	if err != nil {
@@ -102,7 +84,7 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 		return
 	}
 
-	runner := &Runner{}
+	runner := &node.Runner{}
 	err = runner.Merge("name", (runnerName))
 	if err != nil {
 		return
@@ -137,37 +119,4 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 	}
 
 	return
-}
-
-// Merge will either create or retreive the node based on the key-valie pair provides
-// In this case, the Runner struct designates the "name" field as unique
-func (x *Runner) Merge(uniquePropName, propValue string) (err error) {
-	nodeType := "Runner"
-	sess, err := newNeoSession()
-	if err != nil {
-		return err
-	}
-
-	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
-	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
-	return sess.Query(context.Background(), query, nil, x)
-}
-
-// type Task struct{ Runner }
-// type Service struct{ Runner }
-
-func (x *Runner) SetType(name string) error {
-	x.Type = name
-	return x.save()
-}
-
-func (x *Runner) save() (err error) {
-	if x.Id == nil {
-		return fmt.Errorf("no ID provided. ensure this node exists before attempting to update a property")
-	}
-	sess, err := newNeoSession()
-	if err != nil {
-		return err
-	}
-	return sess.Save(context.Background(), x)
 }

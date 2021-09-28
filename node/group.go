@@ -1,4 +1,4 @@
-package main
+package node
 
 type Group struct {
 	Principal
