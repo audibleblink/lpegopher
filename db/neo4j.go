@@ -1,18 +1,26 @@
 package db
 
 import (
+	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/mindstand/gogm/v2"
 )
 
-var argv = args.ArgType{}
+var (
+	argv = args.ArgType{}
+	_    = arg.MustParse(&argv)
+)
 
-func Session() (sess gogm.SessionV2, err error) {
+var session *gogm.SessionV2Impl
 
-	sessConf := gogm.SessionConfig{
+func Session() (sess gogm.SessionV2Impl, err error) {
+
+	config := gogm.SessionConfig{
 		AccessMode:   gogm.AccessModeWrite,
 		DatabaseName: argv.Process.Database,
 	}
 
-	return gogm.G().NewSessionV2(sessConf)
+	session, err := gogm.G().NewSessionV2Impl(config)
+	sess = session
+	return
 }
