@@ -4,6 +4,23 @@ import (
 	gogm "github.com/mindstand/gogm/v2"
 )
 
+const (
+	WriteOwner   = "WRITE_OWNER"
+	WriteDACL    = "WRITE_DACL"
+	WriteProp    = "WRITE_PROP"
+	GenericAll   = "GENERIC_ALL"
+	GenericWrite = "GENERIC_WRITE"
+)
+
+var RelevantRights = map[string]bool{
+	WriteOwner:   true,
+	WriteDACL:    true,
+	WriteProp:    true,
+	GenericAll:   true,
+	GenericWrite: true,
+	// "CONTROL_ACCESS": true,
+}
+
 type Principal struct {
 	gogm.BaseNode
 	Name string `gogm:"unique;name=name"`
@@ -27,7 +44,7 @@ type Principal struct {
 	GenericWriteDll *DLL `gogm:"direction=outgoing;relationship=GENERIC_WRITE"`
 }
 
-func (p *Principal) SetPermCanWriteOwner(ifile interface{}) {
+func (p *Principal) SetPermCanWriteOwner(ifile interface{}) *Principal {
 	switch f := ifile.(type) {
 	case *EXE:
 		p.WriteOwnerExe = f
@@ -36,6 +53,7 @@ func (p *Principal) SetPermCanWriteOwner(ifile interface{}) {
 	case *Directory:
 		p.WriteOwnerDir = f
 	}
+	return p
 }
 
 func (p *Principal) SetPermCanWriteDACL(ifile interface{}) {
@@ -46,6 +64,39 @@ func (p *Principal) SetPermCanWriteDACL(ifile interface{}) {
 		p.WriteOwnerDll = f
 	case *Directory:
 		p.WriteOwnerDir = f
+	}
+}
+
+func (p *Principal) SetPermCanWriteProp(ifile interface{}) {
+	switch f := ifile.(type) {
+	case *EXE:
+		p.WritePropExe = f
+	case *DLL:
+		p.WritePropDll = f
+	case *Directory:
+		p.WritePropDir = f
+	}
+}
+
+func (p *Principal) SetPermGenericAll(ifile interface{}) {
+	switch f := ifile.(type) {
+	case *EXE:
+		p.GenericAllExe = f
+	case *DLL:
+		p.GenericAllDll = f
+	case *Directory:
+		p.GenericAllDir = f
+	}
+}
+
+func (p *Principal) SetPermGenericWrite(ifile interface{}) {
+	switch f := ifile.(type) {
+	case *EXE:
+		p.GenericWriteExe = f
+	case *DLL:
+		p.GenericWriteDll = f
+	case *Directory:
+		p.GenericWriteDir = f
 	}
 }
 

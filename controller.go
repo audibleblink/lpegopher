@@ -17,6 +17,8 @@ func handleProcess(cli *arg.Parser, args argType) (err error) {
 	switch {
 	case args.Process.Dlls != nil:
 	case args.Process.Exes != nil:
+		processor := newFileProcessor(NewExeFromJson)
+		err = processor(args.Process.Exes.File)
 	case args.Process.Tasks != nil:
 		processor := newFileProcessor(NewRunnerFromJson)
 		err = processor(args.Process.Tasks.File)
@@ -27,9 +29,8 @@ func handleProcess(cli *arg.Parser, args argType) (err error) {
 	return
 }
 
-func processDlls(args argType)  {}
-func processExes(args argType)  {}
-func processTasks(args argType) {}
+func processDlls(args argType) {}
+func processExes(args argType) {}
 
 func newFileProcessor(jp jsonProcessor) func(file string) error {
 	return func(path string) error {
@@ -38,8 +39,10 @@ func newFileProcessor(jp jsonProcessor) func(file string) error {
 			return err
 		}
 
+		count := 0
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
+			count += 1
 			text := scanner.Bytes()
 			text, err = DecodeUTF16(text)
 			if err != nil {
@@ -50,6 +53,7 @@ func newFileProcessor(jp jsonProcessor) func(file string) error {
 				return err
 			}
 		}
+		fmt.Println(count)
 		return nil
 
 	}

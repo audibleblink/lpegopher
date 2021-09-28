@@ -62,11 +62,13 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 		err = fmt.Errorf("could not create Runner with JSON property: %s", "fullPath")
 		return
 	}
+	fullPath = pathFix(fullPath)
 
 	if parent, ok = line.Path("Parent").Data().(string); !ok {
 		err = fmt.Errorf("could not create Runner with JSON property: %s", "parent")
 		return
 	}
+	parent = pathFix(parent)
 
 	if runnerType, ok = line.Path("Type").Data().(string); !ok {
 		err = fmt.Errorf("could not create Runner with JSON property: %s", "parent")
@@ -80,7 +82,7 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 	}
 
 	exeNode := &EXE{}
-	err = exeNode.Merge("path", pathFix(fullPath))
+	err = exeNode.Merge("path", fullPath)
 	if err != nil {
 		return
 	}
@@ -90,7 +92,7 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 	}
 
 	dir := &Directory{}
-	dir.Path = pathFix(parent)
+	dir.Path = parent
 	err = dir.Merge("path", dir.Path)
 	if err != nil {
 		return

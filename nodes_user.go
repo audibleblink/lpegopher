@@ -27,3 +27,14 @@ func (x *User) Merge(uniquePropName, propValue string) (err error) {
 func (u *User) JoinGroup(group *Group) {
 	u.Groups = append(u.Groups, group)
 }
+
+func (x *User) save() (err error) {
+	if x.Id == nil {
+		return fmt.Errorf("no ID provided. ensure this node exists before attempting to update a property")
+	}
+	sess, err := newNeoSession()
+	if err != nil {
+		return err
+	}
+	return sess.Save(context.Background(), x)
+}
