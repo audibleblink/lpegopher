@@ -11,16 +11,20 @@ var (
 	_    = arg.MustParse(&argv)
 )
 
-var session *gogm.SessionV2Impl
+var cachedSession gogm.SessionV2
 
-func Session() (sess gogm.SessionV2Impl, err error) {
+func Session() (gogm.SessionV2, error) {
+	var err error
+	if cachedSession != nil {
+		return cachedSession, err
+	}
 
 	config := gogm.SessionConfig{
 		AccessMode:   gogm.AccessModeWrite,
 		DatabaseName: argv.Process.Database,
 	}
 
-	session, err := gogm.G().NewSessionV2Impl(config)
-	sess = session
-	return
+	cachedSession, err = gogm.G().NewSessionV2(config)
+	return cachedSession, err
+
 }
