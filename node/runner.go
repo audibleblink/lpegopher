@@ -36,6 +36,10 @@ func (x *Runner) Merge(uniquePropName, propValue string) (err error) {
 
 	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
 	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
+	if x.Type != "" {
+		queryTemplate = `MERGE (x:%s {%s: "%s", type: "%s"}) RETURN x`
+		query = fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue, x.Type)
+	}
 	return sess.Query(context.Background(), query, nil, x)
 }
 

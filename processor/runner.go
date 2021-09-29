@@ -2,6 +2,7 @@ package processor
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/Jeffail/gabs"
 	"github.com/audibleblink/pegopher/node"
@@ -64,32 +65,23 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 	}
 
 	exeNode := &node.EXE{}
+	exeNode.Name = util.Lower(exe)
 	err = exeNode.Merge("path", fullPath)
-	if err != nil {
-		return
-	}
-	err = exeNode.SetName(util.Lower(exe))
 	if err != nil {
 		return
 	}
 
 	dir := &node.Directory{}
-	dir.Path = parent
+	dir.Path = util.PathFix(parent)
+	dir.Name = filepath.Base(dir.Path)
 	err = dir.Merge("path", dir.Path)
-	if err != nil {
-		return
-	}
-	err = dir.SetName(dir.Path)
 	if err != nil {
 		return
 	}
 
 	runner := &node.Runner{}
+	runner.Type = runnerType
 	err = runner.Merge("name", (runnerName))
-	if err != nil {
-		return
-	}
-	err = runner.SetType(runnerType)
 	if err != nil {
 		return
 	}

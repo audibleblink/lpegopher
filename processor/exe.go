@@ -2,6 +2,7 @@ package processor
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/Jeffail/gabs"
 	"github.com/audibleblink/pegopher/node"
@@ -58,22 +59,21 @@ func NewExeFromJson(jsonLine []byte) (err error) {
 }
 
 func doFile(name, parent, path string, line *gabs.Container) (err error) {
-
 	exe := &node.EXE{}
+	exe.Name = name
 	err = exe.Merge("path", path)
-	if err != nil {
-		return
-	}
-	err = exe.SetName(name)
 	if err != nil {
 		return
 	}
 
 	parentDir := &node.Directory{}
+	parentDir.Name = filepath.Base(parent)
 	err = parentDir.Merge("path", parent)
 	if err != nil {
 		return
 	}
+
+	// create the CONTAINS relationship
 	err = parentDir.Add(exe)
 	if err != nil {
 		return
@@ -85,20 +85,19 @@ func doFile(name, parent, path string, line *gabs.Container) (err error) {
 func doDir(name, parent, path string, line *gabs.Container) (err error) {
 
 	dir := &node.Directory{}
+	dir.Name = name
 	err = dir.Merge("path", path)
-	if err != nil {
-		return
-	}
-	err = dir.SetName(name)
 	if err != nil {
 		return
 	}
 
 	parentDir := &node.Directory{}
+	parentDir.Name = filepath.Base(parent)
 	err = parentDir.Merge("path", parent)
 	if err != nil {
 		return
 	}
+
 	err = parentDir.Add(dir)
 	if err != nil {
 		return

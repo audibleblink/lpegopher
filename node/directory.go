@@ -41,7 +41,11 @@ func (x *Directory) Merge(uniquePropName, propValue string) (err error) {
 	}
 
 	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
-	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, (propValue))
+	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
+	if x.Name != "" {
+		queryTemplate = `MERGE (x:%s {%s: "%s", name: "%s"}) RETURN x`
+		query = fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue, x.Name)
+	}
 	return sess.Query(context.Background(), query, nil, x)
 }
 

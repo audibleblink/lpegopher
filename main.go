@@ -46,7 +46,8 @@ func dbInit() {
 		Username:          argv.Process.Username,
 		Protocol:          argv.Process.Protocol,
 		UseSystemCertPool: true,
-		EnableLogParams:   true,
+		EnableLogParams:   false,
+		Logger:            OverrideLogger{Level: "INFO"},
 	}
 
 	driver, err := gogm.New(
@@ -58,8 +59,6 @@ func dbInit() {
 		&node.EXE{},
 		&node.DLL{},
 		&node.Runner{},
-		// &Task{},
-		// &Service{},
 	)
 	if err != nil {
 		log.Fatal(err)
