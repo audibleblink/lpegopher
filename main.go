@@ -13,21 +13,22 @@ var (
 )
 
 func main() {
+	dbInit()
 	switch {
 	case argv.Collect != nil:
-		err := doCollectCmd(cli, argv)
+		err := doCollectCmd(argv)
 		if err != nil {
 			cli.Fail(err.Error())
 		}
 	case argv.Process != nil:
-		err := doProcessCmd(cli, argv)
+		err := doProcessCmd(argv)
 		if err != nil {
 			cli.Fail(err.Error())
 		}
 	}
 }
 
-func init() {
+func dbInit() {
 
 	config := gogm.Config{
 		IndexStrategy:     gogm.IGNORE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX

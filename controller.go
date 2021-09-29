@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/processor"
 	"github.com/audibleblink/pegopher/util"
 )
 
-func doProcessCmd(cli *arg.Parser, args args.ArgType) (err error) {
+func doProcessCmd(args args.ArgType) (err error) {
 	switch {
 	case args.Process.Dlls != nil:
 	case args.Process.Exes != nil:
