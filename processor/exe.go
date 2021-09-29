@@ -19,8 +19,6 @@ func NewExeFromJson(jsonLine []byte) (err error) {
 		path      string
 		etype     string
 		parent    string
-		// ownerUser  string
-		// ownerGroup string
 
 		ok bool
 	)
@@ -47,21 +45,14 @@ func NewExeFromJson(jsonLine []byte) (err error) {
 		return
 	}
 
-	// if ownerUser, ok = line.Path("DACL.Owner").Data().(string); !ok {
-	// 	err = fmt.Errorf("could not create EXE with JSON property: %s", "DACL.Owner")
-	// 	return
-	// }
-
-	// if ownerGroup, ok = line.Path("DACL.Group").Data().(string); !ok {
-	// 	err = fmt.Errorf("could not create EXE with JSON property: %s", "DACL.Group")
-	// 	return
-	// }
-
 	switch etype {
 	case "directory":
-		return doDir(inodeName, parent, path, line)
+		err = doDir(inodeName, parent, path, line)
 	case "file":
-		return doFile(inodeName, parent, path, line)
+		err = doFile(inodeName, parent, path, line)
+	}
+	if err != nil {
+		return err
 	}
 	return
 }
@@ -113,12 +104,19 @@ func doDir(name, parent, path string, line *gabs.Container) (err error) {
 		return
 	}
 
-	return doDACLS(dir, parentDir, line)
+	err = doDACLS(dir, parentDir, line)
+	if err != nil {
+		return
+	}
+	return
 
 }
 
 func doDACLS(object interface{}, parent *node.Directory, line *gabs.Container) (err error) {
 	aces, err := line.Search("DACL", "Aces").Children()
+	if len(aces) == 0 {
+		return nil
+	}
 	if err != nil {
 		return
 	}

@@ -26,5 +26,4 @@ func Session() (gogm.SessionV2, error) {
 
 	cachedSession, err = gogm.G().NewSessionV2(config)
 	return cachedSession, err
-
 }

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/node"
@@ -13,18 +16,21 @@ var (
 )
 
 func main() {
-	dbInit()
 	switch {
 	case argv.Collect != nil:
-		err := doCollectCmd(argv)
+		err := doCollectCmd(argv, cli)
 		if err != nil {
 			cli.Fail(err.Error())
 		}
 	case argv.Process != nil:
-		err := doProcessCmd(argv)
+		dbInit()
+		err := doProcessCmd(argv, cli)
 		if err != nil {
 			cli.Fail(err.Error())
 		}
+	default:
+		cli.WriteHelp(os.Stderr)
+		os.Exit(1)
 	}
 }
 
@@ -56,7 +62,7 @@ func dbInit() {
 		// &Service{},
 	)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	gogm.SetGlobalGogm(driver)
