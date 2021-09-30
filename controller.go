@@ -62,6 +62,9 @@ func newFileProcessor(jp jsonProcessor) func(file string) error {
 					return err
 				}
 			}
+			if count%20 == 0 {
+				fmt.Println(count)
+			}
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "scanner quit:", err)

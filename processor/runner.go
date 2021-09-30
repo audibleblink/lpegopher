@@ -65,16 +65,23 @@ func NewRunnerFromJson(jsonLine []byte) (err error) {
 	}
 
 	exeNode := &node.EXE{}
-	exeNode.Name = util.Lower(exe)
 	err = exeNode.Merge("path", fullPath)
 	if err != nil {
 		return
 	}
 
+	err = exeNode.UpsertName(util.Lower(exe))
+	if err != nil {
+		return
+	}
+
 	dir := &node.Directory{}
-	dir.Path = util.PathFix(parent)
-	dir.Name = filepath.Base(dir.Path)
-	err = dir.Merge("path", dir.Path)
+	err = dir.Merge("path", util.PathFix(parent))
+	if err != nil {
+		return
+	}
+
+	err = dir.UpsertName(filepath.Base(dir.Path))
 	if err != nil {
 		return
 	}

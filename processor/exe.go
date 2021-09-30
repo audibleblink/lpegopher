@@ -52,23 +52,28 @@ func NewExeFromJson(jsonLine []byte) (err error) {
 	case "file":
 		err = doFile(inodeName, parent, path, line)
 	}
-	if err != nil {
-		return err
-	}
 	return
 }
 
 func doFile(name, parent, path string, line *gabs.Container) (err error) {
 	exe := &node.EXE{}
-	exe.Name = name
 	err = exe.Merge("path", path)
 	if err != nil {
 		return
 	}
 
+	err = exe.UpsertName(name)
+	if err != nil {
+		return
+	}
+
 	parentDir := &node.Directory{}
-	parentDir.Name = filepath.Base(parent)
 	err = parentDir.Merge("path", parent)
+	if err != nil {
+		return
+	}
+
+	err = parentDir.UpsertName(filepath.Base(parent))
 	if err != nil {
 		return
 	}
@@ -85,15 +90,23 @@ func doFile(name, parent, path string, line *gabs.Container) (err error) {
 func doDir(name, parent, path string, line *gabs.Container) (err error) {
 
 	dir := &node.Directory{}
-	dir.Name = name
 	err = dir.Merge("path", path)
 	if err != nil {
 		return
 	}
 
+	err = dir.UpsertName(name)
+	if err != nil {
+		return
+	}
+
 	parentDir := &node.Directory{}
-	parentDir.Name = filepath.Base(parent)
 	err = parentDir.Merge("path", parent)
+	if err != nil {
+		return
+	}
+
+	err = parentDir.UpsertName(filepath.Base(parent))
 	if err != nil {
 		return
 	}

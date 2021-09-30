@@ -30,15 +30,13 @@ func (x *EXE) Merge(uniquePropName, propValue string) (err error) {
 
 	queryTemplate := `MERGE (x:%s {%s: "%s"}) RETURN x`
 	query := fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue)
-	if x.Name != "" {
-		queryTemplate = `MERGE (x:%s {%s: "%s", name: "%s"}) RETURN x`
-		query = fmt.Sprintf(queryTemplate, nodeType, uniquePropName, propValue, x.Name)
-	}
-
 	return sess.Query(context.Background(), query, nil, x)
 }
 
-func (u *EXE) SetName(name string) error {
+func (u *EXE) UpsertName(name string) error {
+	if u.Name == name {
+		return nil
+	}
 	u.Name = name
 	return u.save()
 }
