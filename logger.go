@@ -46,7 +46,7 @@ type OverrideLogger struct {
 
 func DefaultLogger() *OverrideLogger {
 	logger := &OverrideLogger{
-		Level:     LogLevelDebug,
+		Level:     LogLevelInfo,
 		Exclusive: false,
 		Output:    os.Stderr,
 	}
@@ -113,7 +113,6 @@ func loggerGen(level LogLevel, l *OverrideLogger) func(string) {
 
 	return func(s string) {
 		if (l.Level == level && l.Exclusive) || (l.Level <= level && !l.Exclusive) {
-			fmt.Println(l.template)
 			log.Printf(l.template, label, s)
 		}
 	}

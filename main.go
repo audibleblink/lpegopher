@@ -47,7 +47,7 @@ func dbInit() {
 		Protocol:          argv.Process.Protocol,
 		UseSystemCertPool: true,
 		EnableLogParams:   false,
-		Logger:            OverrideLogger{Level: "INFO"},
+		Logger:            DefaultLogger(),
 	}
 
 	driver, err := gogm.New(
