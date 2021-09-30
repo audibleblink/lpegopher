@@ -1,10 +1,14 @@
 package main
 
 import (
+	"os"
+
 	"github.com/alexflint/go-arg"
+	"github.com/audibleblink/pegopher/args"
+	"github.com/audibleblink/pegopher/processor"
 )
 
-func handleCollect(args argType, cli *arg.Parser) {
+func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	switch {
 	case args.Collect.Dlls != nil:
 	case args.Collect.Exes != nil:
@@ -20,4 +24,5 @@ func handleCollect(args argType, cli *arg.Parser) {
 		cli.WriteHelp(os.Stderr)
 		os.Exit(1)
 	}
+	return
 }

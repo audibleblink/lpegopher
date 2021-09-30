@@ -20,7 +20,7 @@ type TaskResult struct {
 	RunLevel string `json:"RunLevel"`
 }
 
-func listTasks() {
+func Tasks() {
 	svc, _ := taskmaster.Connect()
 	tasks, _ := svc.GetRegisteredTasks()
 

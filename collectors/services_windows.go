@@ -7,11 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/audibleblink/pegopher/collectors"
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
-func ListServices() {
+func Services() {
 	svcMgr, err := mgr.Connect()
 	if err != nil {
 		log.Fatal(err)
@@ -33,7 +32,7 @@ func ListServices() {
 		args := strings.Join(splitCmd[1:], " ")
 		context := conf.ServiceStartName
 
-		service := collectors.TaskResult{
+		service := TaskResult{
 			Name:     conf.DisplayName,
 			Type:     "service",
 			Exe:      filepath.Base(path),
