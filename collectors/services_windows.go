@@ -16,6 +16,9 @@ func Services() {
 		log.Fatal(err)
 	}
 	svcNames, err := svcMgr.ListServices()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for _, svcName := range svcNames {
 		svc, err := svcMgr.OpenService(svcName)

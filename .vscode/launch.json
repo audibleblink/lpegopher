@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        
     
         {
             "name": "Process Exes",
@@ -51,7 +52,17 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["collect", "exes","--path", "."],
+            "args": ["collect", "exes","--path", ".", "-o", "c:\\temp\\report.json"],
+            "envFile": "${workspaceFolder}/.env",
+        },
+
+        {
+            "name": "Collect Dlls",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "args": ["collect", "dlls","--path", ".", "-o", "c:\\temp\\report.json"],
             "envFile": "${workspaceFolder}/.env",
         },
     ]
