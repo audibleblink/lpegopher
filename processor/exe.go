@@ -50,12 +50,12 @@ func NewExeFromJson(jsonLine []byte) (err error) {
 	case "directory":
 		err = doDir(inodeName, parent, path, line)
 	case "file":
-		err = doFile(inodeName, parent, path, line)
+		err = doExe(inodeName, parent, path, line)
 	}
 	return
 }
 
-func doFile(name, parent, path string, line *gabs.Container) (err error) {
+func doExe(name, parent, path string, line *gabs.Container) (err error) {
 	exe := &node.EXE{}
 	err = exe.Merge("path", path)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/alexflint/go-arg"
+	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/collectors"
 	"github.com/audibleblink/pegopher/logerr"
@@ -107,4 +108,9 @@ func all() {
 
 	wg.Wait()
 
+}
+
+func getSystem(pid int) error {
+	err := getsystem.InNewProcess(argv.GetSystem.PID, `c:\windows\system32\cmd.exe`, false)
+	return logerr.DefaultLogger().Context("getsystem").Wrap(err)
 }

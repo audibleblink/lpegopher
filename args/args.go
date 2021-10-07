@@ -9,6 +9,18 @@ type neoConnection struct {
 	Database string `arg:"-t,env:NEO_DBNAME" default:"neo4j"`
 }
 
+type ArgType struct {
+	Collect   *collectCmd   `arg:"subcommand" help:"Collect necsesary data"`
+	Process   *processCmd   `arg:"subcommand" help:"Process data and populate neo4j"`
+	GetSystem *getSystemCmd `arg:"subcommand" help:"Utility for acquiring SYSTEM"`
+}
+
+type getSystemCmd struct {
+	PID    int  `arg:"required" help:"Process running as system (ex:winlogon.exe)"`
+	Self   bool `arg:"" help:"Impersonate SYSTEM in current shell"`
+	RunCmd bool `arg:"" help:"Run cmd.exe with duplicated SYSTEM token"`
+}
+
 type processCmd struct {
 	Tasks    *processTasksCmd    `arg:"subcommand"`
 	Services *processServicesCmd `arg:"subcommand"`
@@ -18,11 +30,18 @@ type processCmd struct {
 	neoConnection
 }
 
-type fileIn struct {
-	File string `arg:"required,--file,-f" help:"File to process"`
+type processTasksCmd struct {
+	File string `arg:"-f" help:"File to process" default:"tasks.json"`
 }
 
-type processTasksCmd struct{ fileIn }
-type processServicesCmd struct{ fileIn }
-type processExesCmd struct{ fileIn }
-type processDllsCmd struct{ fileIn }
+type processServicesCmd struct {
+	File string `arg:"-f" help:"File to process" default:"services.json"`
+}
+
+type processExesCmd struct {
+	File string `arg:"-f" help:"File to process" default:"exes.json"`
+}
+
+type processDllsCmd struct {
+	File string `arg:"-f" help:"File to process" default:"dlls.json"`
+}

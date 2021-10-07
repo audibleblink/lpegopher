@@ -2,12 +2,10 @@ package util
 
 import (
 	"bytes"
-	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode/utf16"
-	"unicode/utf8"
 )
 
 func Lower(str string) string {
@@ -86,33 +84,22 @@ func EvaluatePath(path string) (out string) {
 	return val + remainder
 }
 
-func DecodeUTF16(b []byte) ([]byte, error) {
+func LineCount(r io.Reader) (int, error) {
+	buffer := make([]byte, 32*1024)
+	lineSep := []byte{'\n'}
+	count := 0
 
-	if bytes.HasPrefix(b, []byte{0xff, 0xfe}) {
-		b = b[2:]
+	for {
+
+		byteCount, err := r.Read(buffer)
+		count += bytes.Count(buffer[:byteCount], lineSep)
+
+		switch {
+		case err == io.EOF:
+			return count, nil
+		case err != nil:
+			return count, err
+		}
+
 	}
-
-	if bytes.HasPrefix(b, []byte{0x00}) {
-		b = b[1:]
-	}
-
-	if len(b)%2 != 0 {
-		return []byte{}, fmt.Errorf("must have even length byte slice")
-	}
-
-	u16s := make([]uint16, 1)
-	buffer := &bytes.Buffer{}
-	b8buf := make([]byte, 4)
-
-	lb := len(b)
-	for i := 0; i < lb; i += 2 {
-		u16s[0] = uint16(b[i]) + (uint16(b[i+1]) << 8)
-		r := utf16.Decode(u16s)
-		n := utf8.EncodeRune(b8buf, r[0])
-		buffer.Write(b8buf[:n])
-	}
-
-	newBytes := buffer.Bytes()
-
-	return newBytes, nil
 }

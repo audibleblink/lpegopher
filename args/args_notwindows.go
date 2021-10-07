@@ -2,11 +2,6 @@
 
 package args
 
-type ArgType struct {
-	Collect *collectCmd `arg:"subcommand" help:"Only available on Windows"`
-	Process *processCmd `arg:"subcommand" help:"Process data and populate neo4j"`
-}
-
 type dummy struct{}
 type collectCmd struct {
 	Tasks    *dummy `arg:"subcommand" help:"Only available on Windows"`

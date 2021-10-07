@@ -9,12 +9,13 @@ import (
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/processor"
-	"github.com/audibleblink/pegopher/util"
 )
 
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	switch {
 	case args.Process.Dlls != nil:
+		proc := newFileProcessor(processor.NewExeFromJson)
+		err = proc(args.Process.Dlls.File)
 	case args.Process.Exes != nil:
 		proc := newFileProcessor(processor.NewExeFromJson)
 		err = proc(args.Process.Exes.File)
@@ -47,11 +48,6 @@ func newFileProcessor(jp jsonProcessor) func(file string) error {
 		for scanner.Scan() {
 			count += 1
 			text := scanner.Bytes()
-			text, err = util.DecodeUTF16(text)
-			if err != nil {
-				return err
-			}
-
 			err = jp(text)
 			if err != nil {
 				switch err.(type) {

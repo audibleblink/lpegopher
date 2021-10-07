@@ -7,8 +7,13 @@ import (
 
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/pegopher/args"
+	"github.com/audibleblink/pegopher/logerr"
 )
 
 func doCollectCmd(a args.ArgType, cli *arg.Parser) error {
 	return fmt.Errorf("collect functionality is only available on Windows")
+}
+
+func getSystem(pid int) error {
+	return logerr.Wrap(fmt.Errorf("only available on Windows"))
 }
