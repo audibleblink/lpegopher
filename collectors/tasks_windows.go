@@ -3,6 +3,7 @@ package collectors
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/audibleblink/pegopher/util"
@@ -20,7 +21,7 @@ type TaskResult struct {
 	RunLevel string `json:"RunLevel"`
 }
 
-func Tasks() {
+func Tasks(writer io.Writer) {
 	svc, _ := taskmaster.Connect()
 	tasks, _ := svc.GetRegisteredTasks()
 
@@ -55,8 +56,7 @@ func Tasks() {
 			}
 
 			jason, _ := json.Marshal(taschzk)
-			fmt.Println(string(jason))
-			// fmt.Println(taschzk.Cwd)
+			fmt.Fprintln(writer, string(jason))
 		}
 	}
 }

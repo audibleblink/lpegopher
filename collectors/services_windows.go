@@ -3,32 +3,43 @@ package collectors
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"io"
 	"path/filepath"
 	"strings"
 
+	"github.com/audibleblink/pegopher/logerr"
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
-func Services() {
+func Services(writer io.Writer) {
+	svcLog := logerr.DefaultLogger().Context("serivces")
+	svcLog.Level = logerr.LogLevelWarn
+
 	svcMgr, err := mgr.Connect()
 	if err != nil {
-		log.Fatal(err)
+		svcLog.Error(err.Error())
+		return
 	}
+
 	svcNames, err := svcMgr.ListServices()
 	if err != nil {
-		log.Fatal(err)
+		svcLog.Error(err.Error())
+		return
 	}
 
 	for _, svcName := range svcNames {
 		svc, err := svcMgr.OpenService(svcName)
 		if err != nil {
-			log.Fatal(err)
+			svcLog.Warnf(svcName, err)
+			svcLog.Warnf("failed to open service", svcName, err)
+			continue
 		}
 		conf, err := svc.Config()
 		if err != nil {
-			log.Fatal(err)
+			svcLog.Warnf("failed to fetch service config", svcName, err)
+			continue
 		}
+
 		cmdLine := conf.BinaryPathName
 		splitCmd := strings.Split(cmdLine, " ")
 		path := splitCmd[0]
@@ -46,6 +57,6 @@ func Services() {
 		}
 
 		jason, _ := json.Marshal(service)
-		fmt.Println(string(jason))
+		fmt.Fprintln(writer, string(jason))
 	}
 }

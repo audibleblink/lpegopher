@@ -5,20 +5,18 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/Microsoft/go-winio"
+	"github.com/audibleblink/pegopher/logerr"
 	winacl "github.com/kgoins/go-winacl/pkg"
 	"golang.org/x/sys/windows"
 	"www.velocidex.com/golang/binparsergen/reader"
-	pe "www.velocidex.com/golang/go-pe"
+	"www.velocidex.com/golang/go-pe"
 )
-
-var Printer io.Writer
 
 type PEFunction struct {
 	Host      string   `json:"Host"`
@@ -49,19 +47,20 @@ type ReadableAce struct {
 	Rights    []string `json:"Rights"`
 }
 
-func PEs(peType, dir string) {
+func PEs(writer io.Writer, peType, dir string) {
 	absDirPath, _ := filepath.Abs(dir)
-	walkFunction := walkFunctionGenerator(peType)
+	walkFunction := walkFunctionGenerator(writer, peType)
 	filepath.WalkDir(absDirPath, walkFunction)
 }
 
-func walkFunctionGenerator(pattern string) fs.WalkDirFunc {
+func walkFunctionGenerator(writer io.Writer, pattern string) fs.WalkDirFunc {
 	// use a set to track if a report for a PE's parent directory
 	// has already been printed
 	printedParentDir := make(map[string]bool)
+
 	return func(path string, info os.DirEntry, err error) error {
 		if err != nil {
-			log.Printf("HUH? %s\n", err)
+			logerr.Warnf("HUH", err)
 		}
 
 		if info.IsDir() {
@@ -70,7 +69,7 @@ func walkFunctionGenerator(pattern string) fs.WalkDirFunc {
 
 		matched, err := filepath.Match(pattern, filepath.Base(path))
 		if err != nil {
-			log.Printf("#Match %s\n", err)
+			logerr.Warnf("could not match", err)
 		}
 
 		if matched {
@@ -78,24 +77,24 @@ func walkFunctionGenerator(pattern string) fs.WalkDirFunc {
 			if !printedParentDir[parent] {
 				// first time finding a PE in this directory
 				dirReport := newDirectoryReport(parent)
-				jsPrint(dirReport)
+				jsPrint(writer, dirReport)
 				printedParentDir[parent] = true
 			}
 
 			report := newPEReport(path)
 			peFile, err := newPEFile(report.Path)
 			if err != nil {
-				log.Printf("#newPEFile - %s - %s\n", report.Path, err)
+				logerr.Warnf("pe parsing failed", err)
 				return nil
 			}
 
 			err = populatePEReport(report, peFile)
 			if err != nil {
-				log.Printf("#populateReport - %s\n", err)
+				logerr.Warnf("could not generate report", err)
 				return nil
 			}
 
-			jsPrint(report)
+			jsPrint(writer, report)
 
 		}
 		return nil
@@ -173,7 +172,7 @@ func securityDescriptorFor(path string) (sd winacl.NtSecurityDescriptor, err err
 	}
 
 	// convert windows.SD into SDDL, then back into an SD
-	// 	represented as a byte slice, so go-winacl can parse it
+	// represented as a byte slice, so go-winacl can parse it
 	sdBytes, err := winio.SddlToSecurityDescriptor(winSD.String())
 	if err != nil {
 		return
@@ -261,7 +260,7 @@ func genPEFunctions(list []string) []PEFunction {
 	return funcs
 }
 
-func jsPrint(report *PE) {
+func jsPrint(writer io.Writer, report *PE) {
 	serialized, _ := json.Marshal(report)
-	fmt.Fprintln(Printer, string(serialized))
+	fmt.Fprintln(writer, string(serialized))
 }

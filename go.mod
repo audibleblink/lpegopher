@@ -33,6 +33,7 @@ require (
 	github.com/Velocidex/ordereddict v0.0.0-20200723153557-9460a6764ab8 // indirect
 	github.com/Velocidex/pkcs7 v0.0.0-20210524015001-8d1eee94a157 // indirect
 	github.com/audibleblink/bamflags v0.2.0 // indirect
+	github.com/audibleblink/getsystem v0.1.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	golang.org/x/text v0.3.6 // indirect
 )

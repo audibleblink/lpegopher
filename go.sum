@@ -45,6 +45,8 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/audibleblink/bamflags v0.2.0 h1:xLsR8OO2mmbhpQglTvSKNJMnmQMI9L884eJ15zbu4mI=
 github.com/audibleblink/bamflags v0.2.0/go.mod h1:zpuLMpykftgB88SHYGBa1urg0uHn01R2pjeBed+JhB8=
+github.com/audibleblink/getsystem v0.1.1 h1:2Xwj9ef53sOu5M7ArG8j/jr3rb1WQyTNJ/PlWChgrdY=
+github.com/audibleblink/getsystem v0.1.1/go.mod h1:JAoOsoqmC5st/9PtYBmTiP/5c7Bi75HhzXgHUSMJuuo=
 github.com/audibleblink/go-winacl v0.0.2 h1:oNtkwxATcaYbWemr2MQcb1+rT8bZVZCq2GA56URTxR8=
 github.com/audibleblink/go-winacl v0.0.2/go.mod h1:2PxrQ68QRDbtf0uBUsMmlmTL/jB1uZ5XHIptAoZ1ZkQ=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
@@ -372,6 +374,7 @@ golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20210412220455-f1c623a9e750/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20210423082822-04245dca01da/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20210820121016-41cdb8703e55/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210921065528-437939a70204 h1:JJhkWtBuTQKyz2bd5WG9H8iUsJRU3En/KRfN8B2RnDs=
 golang.org/x/sys v0.0.0-20210921065528-437939a70204/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=

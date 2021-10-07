@@ -1,11 +1,16 @@
 package args
 
 type ArgType struct {
-	Collect *collectCmd `arg:"subcommand" help:"Collect necsesary data"`
-	Process *processCmd `arg:"subcommand" help:"Process data and populate neo4j"`
+	Collect   *collectCmd   `arg:"subcommand" help:"Collect necsesary data"`
+	Process   *processCmd   `arg:"subcommand" help:"Process data and populate neo4j"`
+	GetSystem *getSystemCmd `arg:"subcommand" help:"Utility for acquiring SYSTEM"`
 }
 
-// var args = argType{}
+type getSystemCmd struct {
+	PID    int  `arg:"required" help:"Process running as system (ex:winlogon.exe)"`
+	Self   bool `arg:"" help:"Impersonate SYSTEM in current shell"`
+	RunCmd bool `arg:"" help:"Run cmd.exe with duplicated SYSTEM token"`
+}
 
 type collectCmd struct {
 	Tasks    *collectTaskCmd     `arg:"subcommand"`

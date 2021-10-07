@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/alexflint/go-arg"
+	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/pegopher/args"
+	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/node"
 	"github.com/mindstand/gogm/v2"
 )
@@ -16,7 +18,15 @@ var (
 )
 
 func main() {
+
+	logInit()
+
 	switch {
+	case argv.GetSystem != nil:
+		err := getsystem.InNewProcess(argv.GetSystem.PID, `c:\windows\system32\cmd.exe`, false)
+		if err != nil {
+			cli.Fail(err.Error())
+		}
 	case argv.Collect != nil:
 		err := doCollectCmd(argv, cli)
 		if err != nil {
@@ -34,6 +44,15 @@ func main() {
 	}
 }
 
+func logInit() {
+	l := &logerr.OverrideLogger{
+		Level:            logerr.LogLevelWarn,
+		Output:           os.Stderr,
+		LogWrappedErrors: true,
+	}
+	l.SetAsGlobal()
+}
+
 func dbInit() {
 
 	config := gogm.Config{
@@ -47,7 +66,7 @@ func dbInit() {
 		Protocol:          argv.Process.Protocol,
 		UseSystemCertPool: true,
 		EnableLogParams:   false,
-		Logger:            DefaultLogger(),
+		Logger:            logerr.G,
 	}
 
 	driver, err := gogm.New(
