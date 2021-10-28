@@ -2,3 +2,5 @@
 .env
 lpedata
 data
+*.json
+*.zip

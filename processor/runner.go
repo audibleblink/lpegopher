@@ -1,121 +1,64 @@
 package processor
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 
-	"github.com/Jeffail/gabs"
-	"github.com/audibleblink/pegopher/node"
-	"github.com/audibleblink/pegopher/util"
+	"github.com/audibleblink/pegopher/collectors"
+	"github.com/audibleblink/pegopher/cypher"
 )
 
 func NewRunnerFromJson(jsonLine []byte) (err error) {
-	line, err := gabs.ParseJSON(jsonLine)
+
+	var runner collectors.PERunner
+	err = json.Unmarshal(jsonLine, &runner)
 	if err != nil {
 		return
 	}
 
-	var (
-		userName   string
-		exe        string
-		parent     string
-		runnerName string
-		runnerType string
-		fullPath   string
+	query := cypher.NewQuery()
 
-		ok bool
+	query.Merge(
+		"r", collectors.Runner, "name", runner.Name,
+	).Set(
+		"r", "type", runner.Type,
+	).Set(
+		"r", "args", runner.Args,
+	).Merge(
+		"pe", collectors.Exe, "path", runner.FullPath,
+	).Set(
+		"pe", "name", filepath.Base(runner.FullPath),
+	).Set(
+		"pe", "parent", runner.Parent,
+	).Merge(
+		"p", collectors.Principal, "name", runner.Context,
 	)
 
-	if runnerName, ok = line.Path("Name").Data().(string); !ok {
-		err = fmt.Errorf("could not create Runner with JSON property: %s", "Name")
-		return
-	}
-
-	if userName, ok = line.Path("Context").Data().(string); !ok {
-		err = fmt.Errorf("could not create Runner with JSON property: %s", "userName")
-		return
-	}
-
-	if exe, ok = line.Path("Exe").Data().(string); !ok {
-		err = fmt.Errorf("could not create Runner with JSON property: %s", "exeName")
-		return
-	}
-
-	if fullPath, ok = line.Path("FullPath").Data().(string); !ok {
-		err = fmt.Errorf("could not create Runner with JSON property: %s", "fullPath")
-		return
-	}
-	fullPath = util.PathFix(fullPath)
-
-	if parent, ok = line.Path("Parent").Data().(string); !ok {
-		err = fmt.Errorf("could not create Runner with JSON property: %s", "parent")
-		return
-	}
-	parent = util.PathFix(parent)
-
-	if runnerType, ok = line.Path("Type").Data().(string); !ok {
-		err = fmt.Errorf("could not create Runner with JSON property: %s", "parent")
-		return
-	}
-
-	user := &node.User{}
-	err = user.Merge("name", util.Lower(userName))
-	if err != nil {
-		return
-	}
-
-	exeNode := &node.EXE{}
-	err = exeNode.Merge("path", fullPath)
-	if err != nil {
-		return
-	}
-
-	err = exeNode.UpsertName(util.Lower(exe))
-	if err != nil {
-		return
-	}
-
-	dir := &node.Directory{}
-	err = dir.Merge("path", util.PathFix(parent))
-	if err != nil {
-		return
-	}
-
-	err = dir.UpsertName(filepath.Base(dir.Path))
-	if err != nil {
-		return
-	}
-
-	runner := &node.Runner{}
-	runner.Type = runnerType
-	err = runner.Merge("name", (runnerName))
-	if err != nil {
-		return
-	}
+	fmt.Println(query.ToString())
+	return
 
 	// Associate a directory that hosts PEs for a particular Runner
-	err = dir.HostsPEsFor(runner)
-	if err != nil {
-		return
-	}
+	// err = dir.HostsPEsFor(runner)
+	// if err != nil {
+	// 	return
+	// }
 
 	// Creats the edges for Directories CONTAINS a PE
-	err = dir.Add(exeNode)
-	if err != nil {
-		return
-	}
+	// err = dir.Add(exeNode)
+	// if err != nil {
+	// 	return
+	// }
 
 	// Associate the Context (or User) from which the Runner executes
-	err = runner.RunsExeAs(user)
-	if err != nil {
-		return
-	}
+	// err = runner.RunsExeAs(user)
+	// if err != nil {
+	// 	return
+	// }
 
 	// Associate the EXE as getting run by a service
-	err = exeNode.GetsRunBy(runner)
-	if err != nil {
-		return
-	}
-
-	return
+	// err = exeNode.GetsRunBy(runner)
+	// if err != nil {
+	// 	return
+	// }
 }

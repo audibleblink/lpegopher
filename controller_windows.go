@@ -20,29 +20,20 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	switch {
 	case args.Collect.All:
 		all()
-	case args.Collect.Dlls != nil:
-		out, err := mkOutput(args.Collect.Dlls.File)
+	case args.Collect.PEs != nil:
+		out, err := setOutputWriter(args.Collect.PEs.File)
 		if err != nil {
 			return logerr.Wrap(err)
 		}
-		collectors.PEs(out, "*.dll", args.Collect.Dlls.Path)
-	case args.Collect.Exes != nil:
-		out, err := mkOutput(args.Collect.Exes.File)
+
+		collectors.PEs(out, args.Collect.PEs.Path)
+	case args.Collect.Runners != nil:
+		out, err := setOutputWriter(args.Collect.Runners.File)
 		if err != nil {
 			return logerr.Wrap(err)
 		}
-		collectors.PEs(out, "*.exe", args.Collect.Exes.Path)
-	case args.Collect.Tasks != nil:
-		out, err := mkOutput(args.Collect.Tasks.File)
-		if err != nil {
-			return logerr.Wrap(err)
-		}
+
 		collectors.Tasks(out)
-	case args.Collect.Services != nil:
-		out, err := mkOutput(args.Collect.Services.File)
-		if err != nil {
-			return logerr.Wrap(err)
-		}
 		collectors.Services(out)
 	default:
 		cli.WriteHelp(os.Stderr)
@@ -51,7 +42,7 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	return
 }
 
-func mkOutput(outfile string) (output io.Writer, err error) {
+func setOutputWriter(outfile string) (output io.Writer, err error) {
 	if outfile == "stdOut" {
 		output = os.Stdout
 		return
@@ -68,29 +59,20 @@ func mkOutput(outfile string) (output io.Writer, err error) {
 
 func all() {
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(3)
 
 	go func(file, startPath string) {
 		defer wg.Done()
-		out, err := mkOutput(file)
+		out, err := setOutputWriter(file)
 		if err != nil {
 			return
 		}
-		collectors.PEs(out, "*.dll", startPath)
-	}("dlls.json", `C:\`)
-
-	go func(file, startPath string) {
-		defer wg.Done()
-		out, err := mkOutput(file)
-		if err != nil {
-			return
-		}
-		collectors.PEs(out, "*.exe", startPath)
-	}("exes.json", `C:\`)
+		collectors.PEs(out, startPath)
+	}("pes.json", `C:\`)
 
 	go func(file string) {
 		defer wg.Done()
-		out, err := mkOutput(file)
+		out, err := setOutputWriter(file)
 		if err != nil {
 			return
 		}
@@ -99,7 +81,7 @@ func all() {
 
 	go func(file string) {
 		defer wg.Done()
-		out, err := mkOutput(file)
+		out, err := setOutputWriter(file)
 		if err != nil {
 			return
 		}

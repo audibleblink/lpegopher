@@ -1,21 +1,16 @@
 package args
 
-
 type collectCmd struct {
-	Tasks    *collectTaskCmd     `arg:"subcommand"`
-	Services *collectServicesCmd `arg:"subcommand"`
-	Exes     *collectPECmd       `arg:"subcommand"`
-	Dlls     *collectPECmd       `arg:"subcommand"`
-	All      bool                `arg:"--all" help:"Collect everything into files: {tasks,services,exes,dlls}.json"`
+	Runners *collectRunnersCmd `arg:"subcommand"`
+	PEs     *collectPECmd      `arg:"subcommand"`
+	All     bool               `arg:"--all" help:"Collect everything into files: {tasks,services,pes}.json"`
 }
 
-type collectTaskCmd struct{ fileOut }
-type collectServicesCmd struct{ fileOut }
-type collectPECmd struct {
-	fileOut
-	Path string `arg:"required" help:"Directory from where recursive searching will begin"`
-}
-
-type fileOut struct {
+type collectRunnersCmd struct {
 	File string `arg:"--outfile,-o" help:"Output file name" default:"stdOut"`
+}
+
+type collectPECmd struct {
+	File string `arg:"--outfile,-o" help:"Output file name" default:"stdOut"`
+	Path string `arg:"required" help:"Directory whence recursive searching begins"`
 }

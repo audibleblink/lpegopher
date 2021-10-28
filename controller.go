@@ -13,18 +13,12 @@ import (
 
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	switch {
-	case args.Process.Dlls != nil:
-		proc := newFileProcessor(processor.NewExeFromJson)
-		err = proc(args.Process.Dlls.File)
-	case args.Process.Exes != nil:
-		proc := newFileProcessor(processor.NewExeFromJson)
-		err = proc(args.Process.Exes.File)
-	case args.Process.Tasks != nil:
+	case args.Process.PEs != nil:
+		proc := newFileProcessor(processor.NewPEFromJSON)
+		err = proc(args.Process.PEs.File)
+	case args.Process.Runners != nil:
 		proc := newFileProcessor(processor.NewRunnerFromJson)
-		err = proc(args.Process.Tasks.File)
-	case args.Process.Services != nil:
-		proc := newFileProcessor(processor.NewRunnerFromJson)
-		err = proc(args.Process.Services.File)
+		err = proc(args.Process.Runners.File)
 	default:
 		cli.WriteHelp(os.Stderr)
 		os.Exit(1)

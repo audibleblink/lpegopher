@@ -12,10 +12,19 @@ import (
 
 	"github.com/Microsoft/go-winio"
 	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/pegopher/util"
 	winacl "github.com/kgoins/go-winacl/pkg"
 	"golang.org/x/sys/windows"
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"
+)
+
+const (
+	Dll       = "Dll"
+	Exe       = "Exe"
+	Dir       = "Directory"
+	Runner    = "Runner"
+	Principal = "Principal"
 )
 
 type PEFunction struct {
@@ -29,11 +38,11 @@ type DACL struct {
 	Aces  []ReadableAce `json:"Aces"`
 }
 
-// PE contains the parsed import and exports of the PE
-type PE struct {
+// INode contains the parsed import and exports of the INode
+type INode struct {
 	Name     string       `json:"Name"`
 	Path     string       `json:"Path"`
-	Dir      string       `json:"Dir"`
+	Parent   string       `json:"Dir"`
 	Type     string       `json:"Type"`
 	ImpHash  string       `json:"ImpHash"`
 	Exports  []string     `json:"Exports"`
@@ -47,18 +56,18 @@ type ReadableAce struct {
 	Rights    []string `json:"Rights"`
 }
 
-func PEs(writer io.Writer, peType, dir string) {
-	absDirPath, _ := filepath.Abs(dir)
-	walkFunction := walkFunctionGenerator(writer, peType)
-	filepath.WalkDir(absDirPath, walkFunction)
+func PEs(writer io.Writer, dir string) {
+	walkStartPath, _ := filepath.Abs(dir)
+	walkFunction := walkFunctionGenerator(writer)
+	filepath.WalkDir(walkStartPath, walkFunction)
 }
 
-func walkFunctionGenerator(writer io.Writer, pattern string) fs.WalkDirFunc {
+func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 	// use a set to track if a report for a PE's parent directory
 	// has already been printed
-	printedParentDir := make(map[string]bool)
 
 	return func(path string, info os.DirEntry, err error) error {
+		printedParentDir := make(map[string]bool)
 		if err != nil {
 			logerr.Warnf("HUH", err)
 		}
@@ -67,12 +76,11 @@ func walkFunctionGenerator(writer io.Writer, pattern string) fs.WalkDirFunc {
 			return nil
 		}
 
-		matched, err := filepath.Match(pattern, filepath.Base(path))
-		if err != nil {
-			logerr.Warnf("could not match", err)
-		}
+		path = util.Lower(path)
+		isExe, _ := filepath.Match("*.exe", filepath.Base(path))
+		isDll, _ := filepath.Match("*.dll", filepath.Base(path))
 
-		if matched {
+		if isExe || isDll {
 			parent := filepath.Dir(path)
 			if !printedParentDir[parent] {
 				// first time finding a PE in this directory
@@ -101,12 +109,12 @@ func walkFunctionGenerator(writer io.Writer, pattern string) fs.WalkDirFunc {
 	}
 }
 
-func newDirectoryReport(path string) *PE {
-	report := &PE{}
+func newDirectoryReport(path string) *INode {
+	report := &INode{}
 	report.Name = filepath.Base(path)
 	report.Path, _ = filepath.Abs(path)
-	report.Type = "directory"
-	report.Dir = filepath.Dir(path)
+	report.Type = Dir
+	report.Parent = filepath.Dir(path)
 	err := handleDirPerms(report)
 	if err != nil {
 		return report
@@ -114,11 +122,16 @@ func newDirectoryReport(path string) *PE {
 	return report
 }
 
-func newPEReport(path string) *PE {
-	report := &PE{}
+func newPEReport(path string) *INode {
+	report := &INode{}
 	report.Name = filepath.Base(path)
 	report.Path, _ = filepath.Abs(path)
-	report.Type = "file"
+
+	if strings.HasSuffix(util.Lower(report.Path), ".dll") {
+		report.Type = Dll
+	} else if strings.HasSuffix(util.Lower(report.Path), ".exe") {
+		report.Type = Exe
+	}
 	return report
 }
 
@@ -136,12 +149,12 @@ func newPEFile(path string) (pefile *pe.PEFile, err error) {
 	return pe.NewPEFile(peReader)
 }
 
-func populatePEReport(report *PE, peFile *pe.PEFile) error {
+func populatePEReport(report *INode, peFile *pe.PEFile) error {
 	report.ImpHash = peFile.ImpHash()
 	report.Imports = genPEFunctions(peFile.Imports())
 	report.Forwards = genPEFunctions(patchForwards(peFile.Forwards()))
 	report.Exports = patchExports(peFile.Exports())
-	report.Dir = filepath.Dir(report.Path)
+	report.Parent = filepath.Dir(report.Path)
 
 	dacl, err := pullDACL(report.Path)
 	if err != nil {
@@ -217,7 +230,7 @@ func sidResolve(sid winacl.SID) string {
 	return res
 }
 
-func handleDirPerms(report *PE) error {
+func handleDirPerms(report *INode) error {
 	dacl, err := pullDACL(report.Path)
 	if err != nil {
 		return err
@@ -260,7 +273,7 @@ func genPEFunctions(list []string) []PEFunction {
 	return funcs
 }
 
-func jsPrint(writer io.Writer, report *PE) {
+func jsPrint(writer io.Writer, report *INode) {
 	serialized, _ := json.Marshal(report)
 	fmt.Fprintln(writer, string(serialized))
 }

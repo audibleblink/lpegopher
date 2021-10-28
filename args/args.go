@@ -22,26 +22,16 @@ type getSystemCmd struct {
 }
 
 type processCmd struct {
-	Tasks    *processTasksCmd    `arg:"subcommand"`
-	Services *processServicesCmd `arg:"subcommand"`
-	Exes     *processExesCmd     `arg:"subcommand"`
-	Dlls     *processDllsCmd     `arg:"subcommand"`
+	Runners *processRunnerssCmd `arg:"subcommand"`
+	PEs     *processPEsCmd      `arg:"subcommand"`
 
 	neoConnection
 }
 
-type processTasksCmd struct {
-	File string `arg:"-f" help:"File to process" default:"tasks.json"`
+type processRunnerssCmd struct {
+	File string `arg:"-f" help:"File to process" default:"runners.json"`
 }
 
-type processServicesCmd struct {
-	File string `arg:"-f" help:"File to process" default:"services.json"`
-}
-
-type processExesCmd struct {
-	File string `arg:"-f" help:"File to process" default:"exes.json"`
-}
-
-type processDllsCmd struct {
-	File string `arg:"-f" help:"File to process" default:"dlls.json"`
+type processPEsCmd struct {
+	File string `arg:"-f" help:"File to process" default:"pes.json"`
 }

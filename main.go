@@ -17,8 +17,8 @@ var (
 )
 
 func logInit() {
-	l := &logerr.OverrideLogger{
-		Level:            logerr.LogLevelWarn,
+	l := &logerr.Logger{
+		Level:            logerr.LogLevelInfo,
 		Output:           os.Stderr,
 		LogWrappedErrors: true,
 	}
@@ -55,17 +55,18 @@ func main() {
 func dbInit() {
 
 	config := gogm.Config{
-		IndexStrategy:     gogm.IGNORE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
-		PoolSize:          50,
-		Port:              argv.Process.Port,
-		IsCluster:         false, //tells it whether or not to use `bolt+routing`
-		Host:              argv.Process.Host,
-		Password:          argv.Process.Password,
-		Username:          argv.Process.Username,
-		Protocol:          argv.Process.Protocol,
-		UseSystemCertPool: true,
-		EnableLogParams:   false,
-		Logger:            logerr.G,
+		IndexStrategy: gogm.IGNORE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
+		PoolSize:      50,
+		Port:          argv.Process.Port,
+		IsCluster:     false, //tells it whether or not to use `bolt+routing`
+		Host:          argv.Process.Host,
+		Password:      argv.Process.Password,
+		Username:      argv.Process.Username,
+		Protocol:      argv.Process.Protocol,
+		// UseSystemCertPool: true,
+		CAFileLocation:  "./ca.crt",
+		EnableLogParams: false,
+		Logger:          logerr.DefaultLogger(),
 	}
 
 	driver, err := gogm.New(
