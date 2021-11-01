@@ -12,19 +12,12 @@ import (
 
 	"github.com/Microsoft/go-winio"
 	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/pegopher/node"
 	"github.com/audibleblink/pegopher/util"
 	winacl "github.com/kgoins/go-winacl/pkg"
 	"golang.org/x/sys/windows"
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"
-)
-
-const (
-	Dll       = "Dll"
-	Exe       = "Exe"
-	Dir       = "Directory"
-	Runner    = "Runner"
-	Principal = "Principal"
 )
 
 type PEFunction struct {
@@ -114,7 +107,7 @@ func newDirectoryReport(path string) *INode {
 	report := &INode{}
 	report.Name = filepath.Base(path)
 	report.Path, _ = filepath.Abs(path)
-	report.Type = Dir
+	report.Type = node.Dir
 	report.Parent = filepath.Dir(path)
 	err := handleDirPerms(report)
 	if err != nil {
@@ -129,9 +122,9 @@ func newPEReport(path string) *INode {
 	report.Path, _ = filepath.Abs(path)
 
 	if strings.HasSuffix(util.Lower(report.Path), ".dll") {
-		report.Type = Dll
+		report.Type = node.Dll
 	} else if strings.HasSuffix(util.Lower(report.Path), ".exe") {
-		report.Type = Exe
+		report.Type = node.Exe
 	}
 	return report
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/audibleblink/pegopher/collectors"
 	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/pegopher/node"
 )
 
 func CreateRunnerFromJSON(jsonLine []byte) (err error) {
@@ -36,7 +37,7 @@ func queryForRunner(runner *collectors.PERunner) (query *cypher.Query, err error
 	}
 
 	query.Merge(
-		nodeAlias, collectors.Runner, "name", runner.Name,
+		nodeAlias, node.Runner, "name", runner.Name,
 	).Set(
 		nodeAlias, "type", runner.Type,
 	).Set(
@@ -44,11 +45,11 @@ func queryForRunner(runner *collectors.PERunner) (query *cypher.Query, err error
 	).Set(
 		nodeAlias, "exe", runner.Exe,
 	).Merge(
-		"", collectors.Principal, "name", runner.Context,
+		"", node.Principal, "name", runner.Context,
 	).Merge(
-		"", collectors.Exe, "path", runner.FullPath,
+		"", node.Exe, "path", runner.FullPath,
 	).Merge(
-		"", collectors.Dir, "path", runner.Parent,
+		"", node.Dir, "path", runner.Parent,
 	)
 
 	return
@@ -84,17 +85,17 @@ func RelateRunners(path string) (err error) {
 		}
 
 		cypherQ.Merge(
-			rnr, collectors.Runner, "name", runner.Name,
+			rnr, node.Runner, "name", runner.Name,
 		).Merge(
-			prcpl, collectors.Principal, "name", runner.Context,
+			prcpl, node.Principal, "name", runner.Context,
 		).Relate(
 			rnr, "EXECUTES_AS", prcpl,
 		).Merge(
-			pe, collectors.Exe, "path", runner.FullPath,
+			pe, node.Exe, "path", runner.FullPath,
 		).Relate(
 			pe, "EXECUTED_BY", rnr,
 		).Merge(
-			dir, collectors.Dir, "path", runner.Parent,
+			dir, node.Dir, "path", runner.Parent,
 		).Relate(
 			dir, "HOSTS_PES_FOR", rnr,
 		)
