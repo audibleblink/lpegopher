@@ -3,7 +3,6 @@ module github.com/audibleblink/pegopher
 go 1.17
 
 require (
-	github.com/Jeffail/gabs v1.4.0
 	github.com/alexflint/go-arg v1.4.2
 	github.com/capnspacehook/taskmaster v0.0.0-20210519235353-1629df7c85e9
 	github.com/mindstand/gogm/v2 v2.2.0
@@ -20,7 +19,6 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kgoins/go-winacl v0.2.0
 	github.com/mindstand/go-cypherdsl v0.2.0 // indirect
-	github.com/neo4j/neo4j-go-driver/v4 v4.3.3 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/rickb777/date v1.14.2 // indirect
 	github.com/rickb777/plural v1.3.0 // indirect
@@ -35,6 +33,7 @@ require (
 	github.com/audibleblink/bamflags v0.2.0 // indirect
 	github.com/audibleblink/getsystem v0.1.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/neo4j/neo4j-go-driver/v4 v4.3.3
 	golang.org/x/text v0.3.6 // indirect
 )
 

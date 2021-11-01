@@ -17,10 +17,10 @@ type PERunner struct {
 	Name     string `json:"Name"`
 	Type     string `json:"Type"`
 	Exe      string `json:"Exe"`
-	Parent   string `json:"Parent"`
-	FullPath string `json:"FullPath"`
+	Parent   string `json:"Parent"`   // Directory.Path
+	FullPath string `json:"FullPath"` // PE.Path
 	Args     string `json:"Args"`
-	Context  string `json:"Context"`
+	Context  string `json:"Context"` // Principal.Name
 	RunLevel string `json:"RunLevel"`
 }
 
@@ -88,7 +88,6 @@ func Services(writer io.Writer) {
 	for _, svcName := range svcNames {
 		svc, err := svcMgr.OpenService(svcName)
 		if err != nil {
-			logerr.Warnf(svcName, err)
 			logerr.Warnf("failed to open service", svcName, err)
 			continue
 		}

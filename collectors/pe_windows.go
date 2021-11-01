@@ -68,6 +68,7 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 
 	return func(path string, info os.DirEntry, err error) error {
 		printedParentDir := make(map[string]bool)
+
 		if err != nil {
 			logerr.Warnf("HUH", err)
 		}
@@ -98,7 +99,7 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 
 			err = populatePEReport(report, peFile)
 			if err != nil {
-				logerr.Warnf("could not generate report", err)
+				logerr.Warnf("could not generate report", err.Error())
 				return nil
 			}
 

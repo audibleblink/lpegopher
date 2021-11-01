@@ -1,14 +1,14 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/pegopher/args"
+	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/pegopher/node"
-	"github.com/mindstand/gogm/v2"
+	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
 var (
@@ -16,18 +16,17 @@ var (
 	cli  = arg.MustParse(&argv)
 )
 
-func logInit() {
+func init() {
 	l := &logerr.Logger{
 		Level:            logerr.LogLevelInfo,
 		Output:           os.Stderr,
 		LogWrappedErrors: true,
 	}
-	l.SetAsGlobal()
+
+	l.Context("lpegopher").SetAsGlobal()
 }
 
 func main() {
-
-	logInit()
 
 	switch {
 	case argv.GetSystem != nil:
@@ -53,35 +52,16 @@ func main() {
 }
 
 func dbInit() {
+	log := logerr.Add("db init")
+	host := fmt.Sprintf("%s://%s", argv.Process.Protocol, argv.Process.Host)
 
-	config := gogm.Config{
-		IndexStrategy: gogm.IGNORE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
-		PoolSize:      50,
-		Port:          argv.Process.Port,
-		IsCluster:     false, //tells it whether or not to use `bolt+routing`
-		Host:          argv.Process.Host,
-		Password:      argv.Process.Password,
-		Username:      argv.Process.Username,
-		Protocol:      argv.Process.Protocol,
-		// UseSystemCertPool: true,
-		CAFileLocation:  "./ca.crt",
-		EnableLogParams: false,
-		Logger:          logerr.DefaultLogger(),
-	}
-
-	driver, err := gogm.New(
-		&config,
-		gogm.DefaultPrimaryKeyStrategy,
-		&node.User{},
-		&node.Group{},
-		&node.Directory{},
-		&node.EXE{},
-		&node.DLL{},
-		&node.Runner{},
+	var err error
+	cypher.Driver, err = neo4j.NewDriver(
+		host,
+		neo4j.BasicAuth(argv.Process.Username, argv.Process.Password, ""),
 	)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	gogm.SetGlobalGogm(driver)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }

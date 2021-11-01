@@ -8,17 +8,38 @@ import (
 
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/pegopher/args"
+	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/processor"
 )
 
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	switch {
+
 	case args.Process.PEs != nil:
-		proc := newFileProcessor(processor.NewPEFromJSON)
-		err = proc(args.Process.PEs.File)
+		fileProcessor := newFileProcessor(processor.CreatePEFromJSON)
+
+		logerr.Info("Processing PEs")
+		err = fileProcessor(args.Process.PEs.File)
+		if err != nil {
+			return
+		}
+
+		logerr.Info("Creating PE Relationships")
+		// err = collectors.RelatePEs(args.Process.PEs.File)
+		return
+
 	case args.Process.Runners != nil:
-		proc := newFileProcessor(processor.NewRunnerFromJson)
-		err = proc(args.Process.Runners.File)
+		fileProcessor := newFileProcessor(processor.CreateRunnerFromJSON)
+		logerr.Info("Processing Runners")
+		err = fileProcessor(args.Process.Runners.File)
+		if err != nil {
+			return
+		}
+
+		logerr.Info("Creating Runners' Relationships")
+		err = processor.RelateRunners(args.Process.Runners.File)
+		return
+
 	default:
 		cli.WriteHelp(os.Stderr)
 		os.Exit(1)
@@ -52,15 +73,15 @@ func newFileProcessor(jp jsonProcessor) func(file string) error {
 					return err
 				}
 			}
-			if count%20 == 0 {
-				fmt.Println(count)
-			}
+			// if count%20 == 0 {
+			// 	fmt.Println(count)
+			// }
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "scanner quit:", err)
 		}
 
-		fmt.Println(count)
+		// fmt.Println(count)
 		return nil
 
 	}

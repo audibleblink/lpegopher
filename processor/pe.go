@@ -2,13 +2,12 @@ package processor
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/audibleblink/pegopher/collectors"
 	"github.com/audibleblink/pegopher/cypher"
 )
 
-func NewPEFromJSON(jsonLine []byte) (err error) {
+func CreatePEFromJSON(jsonLine []byte) (err error) {
 
 	var inode collectors.INode
 	err = json.Unmarshal(jsonLine, &inode)
@@ -16,20 +15,28 @@ func NewPEFromJSON(jsonLine []byte) (err error) {
 		return
 	}
 
-	cypherQ := queryForNode(&inode)
-	fmt.Println(cypherQ.ToString())
+	cypherQ, err := queryForINode(&inode)
+	if err != nil {
+		return err
+	}
+
+	err = cypherQ.ExecuteW()
 	return
 }
 
-func queryForNode(inode *collectors.INode) (query *cypher.Query) {
-	varr := "d"
-	query = cypher.NewQuery()
+func queryForINode(inode *collectors.INode) (query *cypher.Query, err error) {
+	nodeAlias := "d"
+	query, err = cypher.NewQuery()
+	if err != nil {
+		return nil, err
+	}
+
 	query.Merge(
-		varr, inode.Type, "path", inode.Path,
+		nodeAlias, inode.Type, "path", inode.Path,
 	).Set(
-		varr, "name", inode.Name,
+		nodeAlias, "name", inode.Name,
 	).Set(
-		varr, "parent", inode.Parent,
+		nodeAlias, "parent", inode.Parent,
 	).Merge(
 		"", collectors.Principal, "name", inode.DACL.Owner,
 	).Merge(

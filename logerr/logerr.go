@@ -67,8 +67,9 @@ func Fatalf(s string, vals ...interface{}) { G.Fatalf(s, vals) }
 
 func Wrap(err error) error { return G.Wrap(err) }
 
-func Context(context string) { G.Context(context) }
-func ClearContext()          { G.ClearContext() }
+func Context(context string)    { G.Context(context) }
+func ClearContext()             { G.ClearContext() }
+func Add(context string) Logger { return G.Add(context) }
 
 func DefaultLogger() *Logger {
 	logger := &Logger{
@@ -84,6 +85,16 @@ func (d Logger) SetAsGlobal() {
 
 func (d Logger) ClearContext() {
 	d.context = ""
+}
+
+// Add returns a copy of d with additional context. Useful for loggers
+// the can die once a function returns
+func (d *Logger) Add(context string) Logger {
+	dup := *d
+	dup.context = fmt.Sprintf("%s: ", context)
+	// dup.Context(dup.context + context)
+	// dup.context = dup.Context(fmt.Sprintf("%s: %s", d.context, context)).context
+	return dup
 }
 
 func (d Logger) Context(s string) *Logger {
@@ -155,12 +166,13 @@ func loggerGen(level LogLevel, l *Logger) func(string) {
 	}
 }
 
-// generator that return a configured formatting logger
+// generator that returns a configured formatting logger
 func loggerGenF(level LogLevel, l *Logger) func(string, ...interface{}) {
 	label := fmt.Sprintf("[%s]", label[level])
 	return func(s string, vals ...interface{}) {
 		if (l.Level == level && l.Exclusive) || (l.Level <= level && !l.Exclusive) {
-			log.Printf(l.template+" %v", label, s, vals)
+			fmtMsg := fmt.Sprintf(s, vals)
+			fmt.Printf(l.template, label, l.context, fmtMsg)
 		}
 	}
 }
