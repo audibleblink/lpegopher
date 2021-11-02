@@ -56,10 +56,10 @@ func PEs(writer io.Writer, dir string) {
 }
 
 func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
-	// use a set to track if a report for a PE's parent directory
-	// has already been printed
 
 	return func(path string, info os.DirEntry, err error) error {
+		// use a set to track if a report for a PE's parent directory
+		// has already been printed
 		printedParentDir := make(map[string]bool)
 
 		if err != nil {

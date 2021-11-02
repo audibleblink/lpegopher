@@ -10,9 +10,12 @@ import (
 )
 
 const (
+	CreateTmpl = `CREATE (%s:%s { %s: '%s' })`
+	MatchTmpl  = `MATCH (%s:%s { %s: '%s' })`
 	MergeTmpl  = `MERGE (%s:%s { %s: '%s' })`
 	RelateTmpl = `MERGE (%s)-[:%s]->(%s)`
-	SetTmpl    = `SET %s.%s = '%s'`
+	SetTmpl    = `ON CREATE SET %s.%s = '%s'`
+	SetProps   = `, %s.%s = '%s'`
 )
 
 var Driver neo4j.Driver
@@ -55,14 +58,43 @@ func NewQuery() (*Query, error) {
 
 func (q *Query) Merge(varr, label, uniqProp, value string) *Query {
 	value = util.PathFix(value)
-	fmt.Fprintf(q.b, MergeTmpl, varr, label, uniqProp, value)
+	return q.getAction(MergeTmpl, varr, label, uniqProp, value)
+}
+
+func (q *Query) Create(varr, label, uniqProp, value string) *Query {
+	value = util.PathFix(value)
+	return q.getAction(CreateTmpl, varr, label, uniqProp, value)
+}
+
+func (q *Query) Match(varr, label, uniqProp, value string) *Query {
+	value = util.PathFix(value)
+	return q.getAction(MatchTmpl, varr, label, uniqProp, value)
+}
+
+func (q *Query) Terminate() *Query {
+	fmt.Fprintf(q.b, ";\n")
+	return q
+}
+
+func (q *Query) getAction(template, varr, label, uniqProp, value string) *Query {
+	fmt.Fprintf(q.b, template, varr, label, uniqProp, value)
 	fmt.Fprintf(q.b, "\n")
 	return q
 }
 
-func (q *Query) Set(varr, prop, value string) *Query {
-	value = util.PathFix(value)
-	fmt.Fprintf(q.b, SetTmpl, varr, prop, value)
+func (q *Query) Set(varr string, props map[string]string) *Query {
+	first := true
+	for key, value := range props {
+		if key == "path" {
+			value = util.PathFix(value)
+		}
+		if first {
+			fmt.Fprintf(q.b, SetTmpl, varr, key, value)
+			first = false
+			continue
+		}
+		fmt.Fprintf(q.b, SetProps, varr, key, value)
+	}
 	fmt.Fprintf(q.b, "\n")
 	return q
 }
@@ -101,6 +133,11 @@ func (q *Query) ExecuteW() error {
 	return nil
 }
 
+func (q *Query) Raw(query string) {
+	q.b.Reset()
+	fmt.Fprint(q.b, query)
+}
+
 func (q *Query) txWork(tx neo4j.Transaction) (interface{}, error) {
 	result, err := tx.Run(q.b.String(), nil)
 	if err != nil {
@@ -117,6 +154,6 @@ func (q *Query) ExecuteR() error {
 	return nil
 }
 
-func (q *Query) ToString() string {
+func (q *Query) String() string {
 	return q.b.String()
 }

@@ -5,11 +5,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/audibleblink/pegopher/collectors"
 	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/node"
+)
+
+const (
+	MaxBatchSize = 5000
+)
+
+var EntityCache = map[string]map[string]bool{
+	node.Principal: make(map[string]bool),
+	node.Exe:       make(map[string]bool),
+	node.Dir:       make(map[string]bool),
+	node.Dll:       make(map[string]bool),
+}
+
+var (
+	BatchCount   = 1
+	CurrentBatch = &strings.Builder{}
 )
 
 func CreatePEFromJSON(jsonLine []byte) (err error) {
@@ -25,9 +42,36 @@ func CreatePEFromJSON(jsonLine []byte) (err error) {
 		return err
 	}
 
-	err = cypherQ.ExecuteW()
+	if BatchCount%MaxBatchSize == 0 {
+		cypherQ.Raw(CurrentBatch.String())
+		err = cypherQ.ExecuteW()
+		CurrentBatch.Reset()
+		BatchCount = 0
+	} else {
+		cypherQ.Terminate()
+		_, err = CurrentBatch.WriteString(cypherQ.String())
+		BatchCount++
+	}
+
 	return
 }
+
+func exists(node, uniqPropValue string) bool {
+	return EntityCache[node][uniqPropValue]
+}
+
+func cacheAdd(node, uniqPropValue string) {
+	EntityCache[node][uniqPropValue] = true
+}
+
+// MatchOrCreate works like q.Merge, except a local cache is consulted
+// instead of asking Neo4j. If cache indicates the node has already been
+// created, and relate argument is false, no addition query is appened
+// func MatchOrCreate(varr, label, uniqProp, value string, relate bool) *cypher.Query {
+// 	fmt.Fprintf(q.b, template, varr, label, uniqProp, value)
+// 	fmt.Fprintf(q.b, "\n")
+// 	return q
+// }
 
 func queryForINode(inode *collectors.INode) (query *cypher.Query, err error) {
 	nodeAlias := "d"
@@ -36,20 +80,33 @@ func queryForINode(inode *collectors.INode) (query *cypher.Query, err error) {
 		return nil, err
 	}
 
-	query.Merge(
+	props := map[string]string{
+		"name":   inode.Name,
+		"parent": inode.Parent,
+	}
+
+	query.Create(
 		nodeAlias, inode.Type, "path", inode.Path,
 	).Set(
-		nodeAlias, "name", inode.Name,
-	).Set(
-		nodeAlias, "parent", inode.Parent,
-	).Merge(
-		"", node.Principal, "name", inode.DACL.Owner,
-	).Merge(
-		"", node.Principal, "name", inode.DACL.Group,
+		nodeAlias, props,
 	)
+	cacheAdd(inode.Type, inode.Path)
+
+	if !exists(node.Principal, inode.DACL.Owner) {
+		query.Create("", node.Principal, "name", inode.DACL.Owner)
+		cacheAdd(node.Principal, inode.DACL.Owner)
+	}
+
+	if !exists(node.Principal, inode.DACL.Group) {
+		query.Create("", node.Principal, "name", inode.DACL.Group)
+		cacheAdd(node.Principal, inode.DACL.Group)
+	}
 
 	for _, ace := range inode.DACL.Aces {
-		query.Merge("", node.Principal, "name", ace.Principal)
+		if !exists(node.Principal, ace.Principal) {
+			query.Create("", node.Principal, "name", ace.Principal)
+			cacheAdd(node.Principal, ace.Principal)
+		}
 	}
 
 	return
@@ -63,11 +120,13 @@ func RelatePEs(path string) (err error) {
 	}
 
 	var inode collectors.INode
+	CurrentBatch.Reset()
 
 	count := 0
 	scanner := bufio.NewScanner(file)
 	buf := make([]byte, 0, 8*1024)
 	scanner.Buffer(buf, 1024*1024)
+
 	for scanner.Scan() {
 		count += 1
 		text := scanner.Bytes()
@@ -84,9 +143,9 @@ func RelatePEs(path string) (err error) {
 			return log.Wrap(err)
 		}
 
-		cypherQ.Merge(
+		cypherQ.Match(
 			pe, inode.Type, "path", inode.Path,
-		).Merge(
+		).Match(
 			dir, node.Dir, "path", inode.Parent,
 		).Relate(
 			dir, "CONTAINS", pe,
@@ -95,7 +154,7 @@ func RelatePEs(path string) (err error) {
 		id := 0
 		for _, ace := range inode.DACL.Aces {
 			prnpl := fmt.Sprintf("p%d", id)
-			cypherQ.Merge(
+			cypherQ.Match(
 				prnpl, node.Principal, "name", ace.Principal,
 			)
 
@@ -109,12 +168,17 @@ func RelatePEs(path string) (err error) {
 			id++
 		}
 
-		err = cypherQ.ExecuteW()
-		if err != nil {
-			log.Infof("error processing line: %d %w", count, err)
-			log.Debugf("failed query was: %s", cypherQ.ToString())
+		if count%5000 == 0 {
+			err = cypherQ.ExecuteW()
+			if err != nil {
+				log.Infof("error processing line: %d %w", count, err)
+				log.Debugf("failed query was: %s", cypherQ.String())
+				continue
+			}
+			count++
 			continue
 		}
+		CurrentBatch.WriteString(cypherQ.String())
 	}
 	return
 }

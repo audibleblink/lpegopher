@@ -73,15 +73,15 @@ func newFileProcessor(jp jsonProcessor) func(file string) error {
 					return err
 				}
 			}
-			// if count%20 == 0 {
-			// 	fmt.Println(count)
-			// }
+			if count%500 == 0 {
+				logerr.Infof("Checkpoint. Processed %d lines", count)
+			}
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "scanner quit:", err)
 		}
 
-		// fmt.Println(count)
+		logerr.Infof("Done. Processed %d lines", count)
 		return nil
 
 	}

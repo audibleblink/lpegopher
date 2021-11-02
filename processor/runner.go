@@ -36,15 +36,19 @@ func queryForRunner(runner *collectors.PERunner) (query *cypher.Query, err error
 		return nil, err
 	}
 
+	props := map[string]string{
+		"type": runner.Type,
+		"args": runner.Args,
+		"exe":  runner.Exe,
+	}
+
 	query.Merge(
 		nodeAlias, node.Runner, "name", runner.Name,
 	).Set(
-		nodeAlias, "type", runner.Type,
-	).Set(
-		nodeAlias, "args", runner.Args,
-	).Set(
-		nodeAlias, "exe", runner.Exe,
-	).Merge(
+		nodeAlias, props,
+	)
+
+	query.Merge(
 		"", node.Principal, "name", runner.Context,
 	).Merge(
 		"", node.Exe, "path", runner.FullPath,
@@ -84,17 +88,17 @@ func RelateRunners(path string) (err error) {
 			return log.Wrap(err)
 		}
 
-		cypherQ.Merge(
+		cypherQ.Match(
 			rnr, node.Runner, "name", runner.Name,
-		).Merge(
+		).Match(
 			prcpl, node.Principal, "name", runner.Context,
 		).Relate(
 			rnr, "EXECUTES_AS", prcpl,
-		).Merge(
+		).Match(
 			pe, node.Exe, "path", runner.FullPath,
 		).Relate(
 			pe, "EXECUTED_BY", rnr,
-		).Merge(
+		).Match(
 			dir, node.Dir, "path", runner.Parent,
 		).Relate(
 			dir, "HOSTS_PES_FOR", rnr,
@@ -103,7 +107,7 @@ func RelateRunners(path string) (err error) {
 		err = cypherQ.ExecuteW()
 		if err != nil {
 			log.Infof("error processing line: %d %w", count, err)
-			log.Debugf("failed query was: %s", cypherQ.ToString())
+			log.Debugf("failed query was: %s", cypherQ.String())
 			continue
 		}
 	}
