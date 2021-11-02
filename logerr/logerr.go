@@ -102,6 +102,7 @@ func (d Logger) Context(s string) *Logger {
 	d.template = "%-8s%s"
 	if d.context != "" {
 		d.template = fmt.Sprintf("%%-8s%s: %%s", d.context)
+		d.ClearContext()
 	}
 	return &d
 }
@@ -161,7 +162,8 @@ func loggerGen(level LogLevel, l *Logger) func(string) {
 
 	return func(s string) {
 		if (l.Level == level && l.Exclusive) || (l.Level <= level && !l.Exclusive) {
-			log.Printf(l.template, label, s)
+			out := fmt.Sprintf(l.template, label, s)
+			log.Print(out)
 		}
 	}
 }
@@ -171,8 +173,9 @@ func loggerGenF(level LogLevel, l *Logger) func(string, ...interface{}) {
 	label := fmt.Sprintf("[%s]", label[level])
 	return func(s string, vals ...interface{}) {
 		if (l.Level == level && l.Exclusive) || (l.Level <= level && !l.Exclusive) {
-			fmtMsg := fmt.Sprintf(s, vals)
-			fmt.Printf(l.template, label, l.context, fmtMsg)
+			fmtMsg := fmt.Sprint(vals[:])
+			out := fmt.Sprintf(l.template, label, fmtMsg)
+			log.Print(out)
 		}
 	}
 }

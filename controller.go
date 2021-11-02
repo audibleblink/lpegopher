@@ -18,25 +18,25 @@ func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	case args.Process.PEs != nil:
 		fileProcessor := newFileProcessor(processor.CreatePEFromJSON)
 
-		logerr.Info("Processing PEs")
+		logerr.Info("processing pEs")
 		err = fileProcessor(args.Process.PEs.File)
 		if err != nil {
 			return
 		}
 
-		logerr.Info("Creating PE Relationships")
-		// err = collectors.RelatePEs(args.Process.PEs.File)
+		logerr.Info("creating pe relationships")
+		err = processor.RelatePEs(args.Process.PEs.File)
 		return
 
 	case args.Process.Runners != nil:
 		fileProcessor := newFileProcessor(processor.CreateRunnerFromJSON)
-		logerr.Info("Processing Runners")
+		logerr.Info("processing runners")
 		err = fileProcessor(args.Process.Runners.File)
 		if err != nil {
 			return
 		}
 
-		logerr.Info("Creating Runners' Relationships")
+		logerr.Info("creating runners' relationships")
 		err = processor.RelateRunners(args.Process.Runners.File)
 		return
 

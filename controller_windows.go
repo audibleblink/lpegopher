@@ -59,7 +59,7 @@ func setOutputWriter(outfile string) (output io.Writer, err error) {
 
 func all() {
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(2)
 
 	go func(file, startPath string) {
 		defer wg.Done()
@@ -77,22 +77,13 @@ func all() {
 			return
 		}
 		collectors.Tasks(out)
-	}("tasks.json")
-
-	go func(file string) {
-		defer wg.Done()
-		out, err := setOutputWriter(file)
-		if err != nil {
-			return
-		}
 		collectors.Services(out)
-	}("services.json")
+	}("runners.json")
 
 	wg.Wait()
-
 }
 
 func getSystem(pid int) error {
 	err := getsystem.InNewProcess(argv.GetSystem.PID, `c:\windows\system32\cmd.exe`, false)
-	return logerr.DefaultLogger().Context("getsystem").Wrap(err)
+	return logerr.Add("getsystem").Wrap(err)
 }

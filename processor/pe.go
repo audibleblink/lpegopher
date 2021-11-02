@@ -98,8 +98,14 @@ func RelatePEs(path string) (err error) {
 			cypherQ.Merge(
 				prnpl, node.Principal, "name", ace.Principal,
 			)
-			
-			for _, priv := range ace.Rights
+
+			for _, priv := range ace.Rights {
+				if node.AbusableAces[priv] {
+					cypherQ.Relate(
+						prnpl, priv, pe,
+					)
+				}
+			}
 			id++
 		}
 
