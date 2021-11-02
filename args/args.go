@@ -22,16 +22,8 @@ type getSystemCmd struct {
 }
 
 type processCmd struct {
-	Runners *processRunnerssCmd `arg:"subcommand"`
-	PEs     *processPEsCmd      `arg:"subcommand"`
+	PEs     string `arg:"p" help:"Path to collected PEs json" default:"pes.json"`
+	Runners string `arg:"r" help:"Path to collected Runners json" default:"runners.json"`
 
 	neoConnection
-}
-
-type processRunnerssCmd struct {
-	File string `arg:"-f" help:"File to process" default:"runners.json"`
-}
-
-type processPEsCmd struct {
-	File string `arg:"-f" help:"File to process" default:"pes.json"`
 }
