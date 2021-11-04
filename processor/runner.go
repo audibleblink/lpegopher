@@ -2,6 +2,7 @@ package processor
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/audibleblink/pegopher/cache"
 	"github.com/audibleblink/pegopher/collectors"
@@ -17,79 +18,95 @@ func CreateRunnerFromJSON(jsonLine []byte) (query *cypher.Query, err error) {
 		return
 	}
 
-	nodeAlias := "d"
+	nodeAlias := fmt.Sprintf("pe_%d", CurrentBatchLen)
 	query, err = cypher.NewQuery()
 	if err != nil {
 		return nil, err
 	}
 
-	if !cache.Add(node.Runner, runner.name) {
+	if cache.Add(node.Runner, runner.Name) {
 		props := map[string]string{
-			"type": runner.Type,
-			"args": runner.Args,
-			"exe":  runner.Exe,
+			node.Prop.Type:    runner.Type,
+			node.Prop.Args:    runner.Args,
+			node.Prop.Exe:     runner.Exe,
+			node.Prop.Context: runner.Context,
+			node.Prop.Parent:  runner.Parent,
 		}
 		query.Create(
-			nodeAlias, node.Runner, "name", runner.Name,
+			nodeAlias, node.Runner, node.Prop.Name, runner.Name,
 		).Set(
 			nodeAlias, props,
 		)
 	}
 
-	if !cache.Add(node.Principal, runner.Context) {
-		query.Merge(
-			"", node.Principal, "name", runner.Context,
+	if cache.Add(node.Principal, runner.Context) {
+		query.Create(
+			"", node.Principal, node.Prop.Name, runner.Context,
 		)
 	}
 
-	if !cache.Add(node.Exe, runner.FullPath) {
-		query.Merge(
-			"", node.Exe, "path", runner.FullPath,
+	if cache.Add(node.Exe, runner.FullPath) {
+		query.Create(
+			"", node.Exe, node.Prop.Path, runner.FullPath,
 		)
 	}
 
-	if !cache.Add(node.Dir, runner.Parent) {
-		query.Merge(
-			"", node.Dir, "path", runner.Parent,
+	if cache.Add(node.Dir, runner.Parent) {
+		query.Create(
+			"", node.Dir, node.Prop.Path, runner.Parent,
 		)
 	}
 
 	return
 }
 
-func RelateRunners(jsonLine []byte) (cypherQ *cypher.Query, err error) {
+func BulkRelateRunners() (err error) {
 	log := logerr.Add("runner relation")
-	var runner collectors.PERunner
 
-	err = json.Unmarshal(jsonLine, &runner)
+	cypherQ, err := cypher.NewQuery()
 	if err != nil {
 		err = log.Wrap(err)
 		return
 	}
 
-	rnr, prcpl, pe, dir := "runner", "principal", "pe", "hostDir"
-
-	cypherQ, err = cypher.NewQuery()
+	// relate dirs that hosts a runner exe
+	cypherQ.Raw(`
+	CALL apoc.periodic.iterate(
+		"MATCH (r:Runner),(dir:Directory) WHERE r.parent = dir.path RETURN r,dir",
+		"MERGE (dir)-[:HOSTS_PES_FOR]->(r)",
+		{batchSize:100, parallel: true, iterateList:true})
+	`)
+	err = cypherQ.ExecuteW()
 	if err != nil {
-		err = logerr.Wrap(err)
+		err = log.Wrap(err)
 		return
 	}
 
-	cypherQ.Match(
-		rnr, node.Runner, "name", runner.Name,
-	).Match(
-		prcpl, node.Principal, "name", runner.Context,
-	).Relate(
-		rnr, "EXECUTES_AS", prcpl,
-	).Match(
-		pe, node.Exe, "path", runner.FullPath,
-	).Relate(
-		pe, "EXECUTED_BY", rnr,
-	).Match(
-		dir, node.Dir, "path", runner.Parent,
-	).Relate(
-		dir, "HOSTS_PES_FOR", rnr,
-	)
+	// relate principals that run certain runners
+	cypherQ.Raw(`
+	CALL apoc.periodic.iterate(
+		"MATCH (r:Runner),(p:Principal) WHERE r.context = p.name RETURN r,p",
+		"MERGE (r)-[:EXECUTES_AS]->(p)",
+		{batchSize:100, parallel: true, iterateList:true})
+	`)
+	err = cypherQ.ExecuteW()
+	if err != nil {
+		err = log.Wrap(err)
+		return
+	}
+
+	// relate exes that are executed by a runner
+	cypherQ.Raw(`
+	CALL apoc.periodic.iterate(
+		"MATCH (r:Runner),(exe:Exe) WHERE r.path = exe.path RETURN r,exe",
+		"MERGE (exe)-[:EXECUTED_FROM]->(r)",
+		{batchSize:100, parallel: true, iterateList:true})
+	`)
+	err = cypherQ.ExecuteW()
+	if err != nil {
+		err = log.Wrap(err)
+		return
+	}
 
 	return
 }

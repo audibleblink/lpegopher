@@ -18,9 +18,9 @@ var (
 
 func init() {
 	l := &logerr.Logger{
-		Level:            logerr.LogLevelInfo,
-		Output:           os.Stderr,
-		LogWrappedErrors: true,
+		Level:  logerr.LogLevelInfo,
+		Output: os.Stderr,
+		// LogWrappDlledErrors: true,
 	}
 
 	l.Context("lpegopher").SetAsGlobal()
@@ -60,8 +60,36 @@ func dbInit() {
 		host,
 		neo4j.BasicAuth(argv.Process.Username, argv.Process.Password, ""),
 	)
-
 	if err != nil {
 		log.Fatal(err.Error())
+	}
+
+	cypherQ, err := cypher.NewQuery()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	tx, err := cypherQ.Begin()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer tx.Rollback()
+
+	tx.Run("CREATE CONSTRAINT ON (a:Exe) ASSERT a.path IS UNIQUE;", nil)
+	tx.Run("CREATE CONSTRAINT ON (a:Dll) ASSERT a.path IS UNIQUE;", nil)
+	tx.Run("CREATE CONSTRAINT ON (a:Directory) ASSERT a.path IS UNIQUE;", nil)
+	tx.Run("CREATE CONSTRAINT ON (a:Principal) ASSERT a.name IS UNIQUE;", nil)
+	tx.Run("CREATE CONSTRAINT ON (a:Runner) ASSERT a.name IS UNIQUE;", nil)
+
+	err = tx.Commit()
+	if err != nil {
+		switch e := err.(type) {
+		case *neo4j.Neo4jError:
+			if e.Code == "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists" {
+				log.Debug("node constraints already  in place, skipping")
+			}
+		default:
+			log.Errorf("tx commit failed %s", err)
+		}
 	}
 }

@@ -22,8 +22,8 @@ type getSystemCmd struct {
 }
 
 type processCmd struct {
-	PEs     string `arg:"p" help:"Path to collected PEs json" default:"pes.json"`
-	Runners string `arg:"r" help:"Path to collected Runners json" default:"runners.json"`
+	PEs     string `arg:"-p" help:"Path to collected PEs json" default:"pes.json"`
+	Runners string `arg:"-r" help:"Path to collected Runners json" default:"runners.json"`
 
 	neoConnection
 }

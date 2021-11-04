@@ -7,6 +7,7 @@ var store = map[string]map[string]bool{
 	node.Exe:       make(map[string]bool),
 	node.Dir:       make(map[string]bool),
 	node.Dll:       make(map[string]bool),
+	node.Runner:    make(map[string]bool),
 }
 
 func Add(nodeType, uniqPropValue string) bool {

@@ -13,8 +13,8 @@ const (
 	CreateTmpl = `CREATE (%s:%s { %s: '%s' })`
 	MatchTmpl  = `MATCH (%s:%s { %s: '%s' })`
 	MergeTmpl  = `MERGE (%s:%s { %s: '%s' })`
-	RelateTmpl = `MERGE (%s)-[:%s]->(%s)`
-	SetTmpl    = `ON CREATE SET %s.%s = '%s'`
+	RelateTmpl = `MERGE (%s)-[:%s]->(%s) `
+	SetTmpl    = `SET %s.%s = '%s'`
 	SetProps   = `, %s.%s = '%s'`
 )
 
@@ -57,37 +57,46 @@ func NewQuery() (*Query, error) {
 }
 
 func (q *Query) Merge(varr, label, uniqProp, value string) *Query {
-	value = util.PathFix(value)
 	return q.getAction(MergeTmpl, varr, label, uniqProp, value)
 }
 
 func (q *Query) Create(varr, label, uniqProp, value string) *Query {
-	value = util.PathFix(value)
 	return q.getAction(CreateTmpl, varr, label, uniqProp, value)
 }
 
 func (q *Query) Match(varr, label, uniqProp, value string) *Query {
-	value = util.PathFix(value)
 	return q.getAction(MatchTmpl, varr, label, uniqProp, value)
 }
 
-func (q *Query) Terminate() *Query {
-	fmt.Fprintf(q.b, ";\n")
+func (q *Query) getAction(template, varr, label, uniqProp, value string) *Query {
+	value = util.PathFix(value)
+	fmt.Fprintf(q.b, template, varr, label, uniqProp, value)
+	fmt.Fprintf(q.b, " ")
 	return q
 }
 
-func (q *Query) getAction(template, varr, label, uniqProp, value string) *Query {
-	fmt.Fprintf(q.b, template, varr, label, uniqProp, value)
-	fmt.Fprintf(q.b, "\n")
+func (q *Query) Append(query string) *Query {
+	q.b.WriteString(query)
+	q.b.WriteString("\n")
 	return q
+}
+
+func (q *Query) EndMerge() *Query {
+	return q.Append("WITH count(*) as dummy\n")
+}
+
+func (q *Query) Return() *Query {
+	return q.Append("RETURN count(*)")
+}
+
+func (q *Query) Terminate() *Query {
+	return q.Append("\n")
 }
 
 func (q *Query) Set(varr string, props map[string]string) *Query {
 	first := true
 	for key, value := range props {
-		if key == "path" {
-			value = util.PathFix(value)
-		}
+		value = util.PathFix(value)
 		if first {
 			fmt.Fprintf(q.b, SetTmpl, varr, key, value)
 			first = false
@@ -95,13 +104,12 @@ func (q *Query) Set(varr string, props map[string]string) *Query {
 		}
 		fmt.Fprintf(q.b, SetProps, varr, key, value)
 	}
-	fmt.Fprintf(q.b, "\n")
+	fmt.Fprintf(q.b, " ")
 	return q
 }
 
 func (q *Query) Relate(var1, rel, var2 string) *Query {
 	fmt.Fprintf(q.b, RelateTmpl, var1, rel, var2)
-	fmt.Fprintf(q.b, "\n")
 	return q
 }
 
@@ -138,6 +146,15 @@ func (q *Query) Raw(query string) {
 	fmt.Fprint(q.b, query)
 }
 
+func (q *Query) Reset() *Query {
+	q.b.Reset()
+	return q
+}
+
+func (q *Query) String() string {
+	return q.b.String()
+}
+
 func (q *Query) txWork(tx neo4j.Transaction) (interface{}, error) {
 	result, err := tx.Run(q.b.String(), nil)
 	if err != nil {
@@ -150,10 +167,7 @@ func (q *Query) txWork(tx neo4j.Transaction) (interface{}, error) {
 	return summary, nil
 }
 
-func (q *Query) ExecuteR() error {
-	return nil
-}
-
-func (q *Query) String() string {
-	return q.b.String()
+func (q *Query) Begin() (neo4j.Transaction, error) {
+	sess := q.d.NewSession(neo4j.SessionConfig{})
+	return sess.BeginTransaction()
 }

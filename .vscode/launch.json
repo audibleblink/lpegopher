@@ -6,6 +6,7 @@
     "configurations": [
 
 
+
         {
             "name": "Collect PEs",
             "type": "go",
@@ -18,21 +19,6 @@
                 "--path",
                 "c:\\users\\user\\appdata",
                 "-o",
-                "data/pes.json"
-            ],
-            "envFile": "${workspaceFolder}/.env",
-        },
-
-        {
-            "name": "Process PEs",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}",
-            "args": [
-                "process",
-                "pes",
-                "-f",
                 "data/pes.json"
             ],
             "envFile": "${workspaceFolder}/.env",
@@ -54,16 +40,32 @@
         },
 
         {
-            "name": "Process Runners",
+            "name": "Process All",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
             "args": [
                 "process",
-                "runners",
-                "-f",
-                "data/runners.json"
+                "-r",
+                "/temp/runners.json",
+                "-p",
+                "/temp/pes.json",
+            ],
+            "envFile": "${workspaceFolder}/.env",
+        },
+        {
+            "name": "Process AppData",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "args": [
+                "process",
+                "-r",
+                "data/runners.json",
+                "-p",
+                "data/pes.json",
             ],
             "envFile": "${workspaceFolder}/.env",
         },

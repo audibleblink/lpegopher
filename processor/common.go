@@ -2,21 +2,24 @@ package processor
 
 import (
 	"bufio"
+	"errors"
 	"os"
 	"strings"
 
 	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/util"
-)
-
-const (
-	MaxBatchSize = 5000
+	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
 var (
-	BatchCounter = 1
-	CurrentBatch = &strings.Builder{}
+	MaxBatchSize = 5
+)
+
+var (
+	CurrentBatchLen = 1
+	CurrentBatch    = &strings.Builder{}
+	BatchCounter    = 1
 )
 
 type queryBuilder func([]byte) (*cypher.Query, error)
@@ -24,7 +27,7 @@ type queryBuilder func([]byte) (*cypher.Query, error)
 func QueryBuilder(callback queryBuilder) func(string) error {
 
 	return func(path string) error {
-		log := logerr.Add("relate generator")
+		log := logerr.Add("querybuilder")
 		file, err := os.Open(path)
 		if err != nil {
 			return err
@@ -35,6 +38,9 @@ func QueryBuilder(callback queryBuilder) func(string) error {
 		if err != nil {
 			log.Fatalf("could not get line count for %s", path)
 		}
+		log.Infof("processing %d lines with batch size %d == %d batches", lineCount, MaxBatchSize, lineCount*1.0/MaxBatchSize+1)
+
+		file.Seek(0, 0)
 
 		scanner := bufio.NewScanner(file)
 		buf := make([]byte, 0, 8*1024)
@@ -46,21 +52,35 @@ func QueryBuilder(callback queryBuilder) func(string) error {
 
 			cypherQ, err := callback(text)
 			if err != nil {
-				log.Errorf("error generating 	query for line %d", count)
+				log.Errorf("error generating query for line %d", count)
 				continue
 			}
-
-			if BatchCounter%MaxBatchSize == 0 || count == lineCount {
+			if CurrentBatchLen%MaxBatchSize == 0 || count == lineCount {
+				log.Infof("commiting batch transaction %d", BatchCounter)
 				cypherQ.Raw(CurrentBatch.String())
-				CurrentBatch.Reset()
-				BatchCounter = 1
+				cypherQ.Return()
 				err = cypherQ.ExecuteW()
 				if err != nil {
-					log.Errorf("query failed %b", err)
+					err = errors.Unwrap(err)
+					switch e := err.(type) {
+					case *neo4j.Neo4jError:
+						if e.Code == "Neo.ClientError.Schema.ConstraintValidationFailed" {
+							log.Debugf("duplicate entry (%s)", e.Msg)
+						}
+					default:
+						log.Errorf("query failed %s", err)
+					}
+					log.Errorf("query failed %s", err)
+					continue
 				}
-			} else {
-				CurrentBatch.WriteString(cypherQ.Terminate().String())
 				BatchCounter++
+				CurrentBatch.Reset()
+				CurrentBatchLen = 1
+			} else {
+				if len(cypherQ.String()) > 0 {
+					CurrentBatch.WriteString(cypherQ.Terminate().String())
+					CurrentBatchLen++
+				}
 			}
 		}
 

@@ -17,7 +17,7 @@ const (
 	LogLevelFatal
 )
 
-var label map[LogLevel]string = map[LogLevel]string{
+var labels map[LogLevel]string = map[LogLevel]string{
 	LogLevelDebug: "DEBUG",
 	LogLevelInfo:  "INFO",
 	LogLevelWarn:  "WARN",
@@ -91,9 +91,7 @@ func (d Logger) ClearContext() {
 // the can die once a function returns
 func (d *Logger) Add(context string) Logger {
 	dup := *d
-	dup.context = fmt.Sprintf("%s: ", context)
-	// dup.Context(dup.context + context)
-	// dup.context = dup.Context(fmt.Sprintf("%s: %s", d.context, context)).context
+	dup.context = fmt.Sprintf("%s: %s: ", d.context, context)
 	return dup
 }
 
@@ -112,7 +110,7 @@ func (d Logger) Debug(s string) {
 }
 
 func (d Logger) Debugf(s string, vals ...interface{}) {
-	loggerGenF(LogLevelDebug, &d)(s, vals)
+	loggerGenF(LogLevelDebug, &d)(s, vals...)
 }
 
 func (d Logger) Info(s string) {
@@ -120,7 +118,7 @@ func (d Logger) Info(s string) {
 }
 
 func (d Logger) Infof(s string, vals ...interface{}) {
-	loggerGenF(LogLevelInfo, &d)(s, vals)
+	loggerGenF(LogLevelInfo, &d)(s, vals...)
 }
 
 func (d Logger) Warn(s string) {
@@ -128,7 +126,7 @@ func (d Logger) Warn(s string) {
 }
 
 func (d Logger) Warnf(s string, vals ...interface{}) {
-	loggerGenF(LogLevelWarn, &d)(s, vals)
+	loggerGenF(LogLevelWarn, &d)(s, vals...)
 }
 
 func (d Logger) Error(s string) {
@@ -136,7 +134,7 @@ func (d Logger) Error(s string) {
 }
 
 func (d Logger) Errorf(s string, vals ...interface{}) {
-	loggerGenF(LogLevelError, &d)(s, vals)
+	loggerGenF(LogLevelError, &d)(s, vals...)
 }
 
 func (d Logger) Fatal(s string) {
@@ -145,7 +143,7 @@ func (d Logger) Fatal(s string) {
 }
 
 func (d Logger) Fatalf(s string, vals ...interface{}) {
-	loggerGenF(LogLevelFatal, &d)(s, vals)
+	loggerGenF(LogLevelFatal, &d)(s, vals...)
 	os.Exit(1)
 }
 
@@ -158,11 +156,12 @@ func (d Logger) Wrap(err error) error {
 
 // generator that return a configured logger
 func loggerGen(level LogLevel, l *Logger) func(string) {
-	label := fmt.Sprintf("[%s]", label[level])
+	lvlTag := lvlFormat(level)
+	newTmpl := fmt.Sprint(lvlTag, l.context)
 
 	return func(s string) {
 		if (l.Level == level && l.Exclusive) || (l.Level <= level && !l.Exclusive) {
-			out := fmt.Sprintf(l.template, label, s)
+			out := fmt.Sprintf("%s: %s", newTmpl, s)
 			log.Print(out)
 		}
 	}
@@ -170,12 +169,24 @@ func loggerGen(level LogLevel, l *Logger) func(string) {
 
 // generator that returns a configured formatting logger
 func loggerGenF(level LogLevel, l *Logger) func(string, ...interface{}) {
-	label := fmt.Sprintf("[%s]", label[level])
-	return func(s string, vals ...interface{}) {
+	lvlTag := lvlFormat(level)
+	newTmpl := fmt.Sprint(lvlTag, l.context, "%s")
+
+	return func(fmtString string, vals ...interface{}) {
+		msg := fmt.Sprintf(fmtString, vals...)
 		if (l.Level == level && l.Exclusive) || (l.Level <= level && !l.Exclusive) {
-			fmtMsg := fmt.Sprint(vals[:])
-			out := fmt.Sprintf(l.template, label, fmtMsg)
-			log.Print(out)
+			fmtMsg := fmt.Sprintf(newTmpl, msg)
+			log.Print(fmtMsg)
 		}
 	}
+}
+
+// Left-indent, width=8
+// "[INFO]   "
+// "[ERROR]  "
+func lvlFormat(lvl LogLevel) string {
+	return fmt.Sprintf(
+		"%-8s",
+		fmt.Sprintf("[%s]", labels[lvl]),
+	)
 }
