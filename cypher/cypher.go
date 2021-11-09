@@ -81,8 +81,12 @@ func (q *Query) Append(query string) *Query {
 	return q
 }
 
+func (q *Query) With(label string) *Query {
+	return q.Append(fmt.Sprintf("WITH %s", label))
+}
+
 func (q *Query) EndMerge() *Query {
-	return q.Append("WITH count(*) as dummy\n")
+	return q.Append("WITH count(*) as dummy")
 }
 
 func (q *Query) Return() *Query {
@@ -90,7 +94,7 @@ func (q *Query) Return() *Query {
 }
 
 func (q *Query) Terminate() *Query {
-	return q.Append("\n")
+	return q.Append("")
 }
 
 func (q *Query) Set(varr string, props map[string]string) *Query {
@@ -126,10 +130,10 @@ func (q *Query) ExecuteW() error {
 	)
 
 	if summary, ok = result.(neo4j.ResultSummary); !ok {
-		q.l.Debugf("failed to cast %v:", result)
+		q.l.Debugf("failed to summary %v:", result)
 	}
 
-	if q.l.Level <= logerr.LogLevelDebug {
+	if q.l.Level == logerr.LogLevelDebug {
 		res := map[string]int{
 			"created":   summary.Counters().NodesCreated(),
 			"props set": summary.Counters().PropertiesSet(),
@@ -141,9 +145,10 @@ func (q *Query) ExecuteW() error {
 	return nil
 }
 
-func (q *Query) Raw(query string) {
+func (q *Query) Raw(query string) *Query {
 	q.b.Reset()
 	fmt.Fprint(q.b, query)
+	return q
 }
 
 func (q *Query) Reset() *Query {

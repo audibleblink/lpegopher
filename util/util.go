@@ -3,10 +3,20 @@ package util
 import (
 	"bytes"
 	"io"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+)
+
+var src = rand.NewSource(1337)
 
 func Lower(str string) string {
 	return strings.ToLower(str)
@@ -102,4 +112,41 @@ func LineCount(r io.Reader) (int, error) {
 		}
 
 	}
+}
+
+func Rand() string {
+	size := 6
+	sb := strings.Builder{}
+	sb.Grow(size)
+	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
+	for i, cache, remain := size-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			sb.WriteByte(letterBytes[idx])
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+
+	return sb.String()
+}
+
+func SmoothBrainPath(cmdline string) (bin, args string) {
+	if strings.HasPrefix(cmdline, `"`) {
+		matchedQuoteIdx := strings.Index(cmdline[1:], `"`)
+		quoteCharOffset := 1
+		endOfCmd := len(cmdline) - len(cmdline[matchedQuoteIdx:]) + quoteCharOffset
+		bin = cmdline[quoteCharOffset:endOfCmd]
+		args = cmdline[endOfCmd+quoteCharOffset:]
+		args = strings.TrimSpace(args)
+		return
+	}
+
+	splitCmd := strings.Split(cmdline, " ")
+	bin = splitCmd[0]
+	args = strings.Join(splitCmd[1:], " ")
+	return
 }

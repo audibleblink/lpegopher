@@ -7,6 +7,9 @@
 
 
 
+
+
+
         {
             "name": "Collect PEs",
             "type": "go",
@@ -46,6 +49,7 @@
             "mode": "auto",
             "program": "${workspaceFolder}",
             "args": [
+                "-v",
                 "process",
                 "-r",
                 "/temp/runners.json",
@@ -66,6 +70,23 @@
                 "data/runners.json",
                 "-p",
                 "data/pes.json",
+            ],
+            "envFile": "${workspaceFolder}/.env",
+        },
+        {
+            "name": "DROP and Process AppData",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "args": [
+                "-v",
+                "process",
+                "-r",
+                "data/runners.json",
+                "-p",
+                "data/pes.json",
+                "--drop",
             ],
             "envFile": "${workspaceFolder}/.env",
         },

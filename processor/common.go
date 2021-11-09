@@ -13,13 +13,13 @@ import (
 )
 
 var (
-	MaxBatchSize = 5
+	MaxBatchSize = 1
 )
 
 var (
 	CurrentBatchLen = 1
 	CurrentBatch    = &strings.Builder{}
-	BatchCounter    = 1
+	BatchCounter    = 0
 )
 
 type queryBuilder func([]byte) (*cypher.Query, error)
@@ -45,20 +45,23 @@ func QueryBuilder(callback queryBuilder) func(string) error {
 		scanner := bufio.NewScanner(file)
 		buf := make([]byte, 0, 8*1024)
 		scanner.Buffer(buf, 1024*1024)
-		count := 0
+		lineNumber := 0
 		for scanner.Scan() {
-			count += 1
+			lineNumber += 1
 			text := scanner.Bytes()
 
 			cypherQ, err := callback(text)
 			if err != nil {
-				log.Errorf("error generating query for line %d", count)
+				log.Errorf("error generating query for line %d", lineNumber)
 				continue
 			}
-			if CurrentBatchLen%MaxBatchSize == 0 || count == lineCount {
+
+			// CurrentBatch.WriteString(cypherQ.String())
+			if CurrentBatchLen%MaxBatchSize == 0 || lineNumber == lineCount {
+				BatchCounter++
 				log.Infof("commiting batch transaction %d", BatchCounter)
-				cypherQ.Raw(CurrentBatch.String())
-				cypherQ.Return()
+				CurrentBatch.WriteString(cypherQ.String())
+				cypherQ.Raw(CurrentBatch.String()).Return()
 				err = cypherQ.ExecuteW()
 				if err != nil {
 					err = errors.Unwrap(err)
@@ -66,19 +69,21 @@ func QueryBuilder(callback queryBuilder) func(string) error {
 					case *neo4j.Neo4jError:
 						if e.Code == "Neo.ClientError.Schema.ConstraintValidationFailed" {
 							log.Debugf("duplicate entry (%s)", e.Msg)
+							continue
+						} else {
+							log.Errorf("neo  %s", err)
+							// continue
 						}
 					default:
 						log.Errorf("query failed %s", err)
+						continue
 					}
-					log.Errorf("query failed %s", err)
-					continue
 				}
-				BatchCounter++
 				CurrentBatch.Reset()
 				CurrentBatchLen = 1
 			} else {
 				if len(cypherQ.String()) > 0 {
-					CurrentBatch.WriteString(cypherQ.Terminate().String())
+					CurrentBatch.WriteString(cypherQ.String())
 					CurrentBatchLen++
 				}
 			}

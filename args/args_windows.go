@@ -3,7 +3,7 @@ package args
 type collectCmd struct {
 	Runners *collectRunnersCmd `arg:"subcommand"`
 	PEs     *collectPECmd      `arg:"subcommand"`
-	All     bool               `arg:"--all" help:"Collect everything into files: {runners,pes}.json"`
+	All     bool               `arg:"--all" help:"Collect everything into files: ./{runners,pes}.json"`
 }
 
 type collectRunnersCmd struct {

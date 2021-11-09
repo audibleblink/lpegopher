@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"strings"
 
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/util"
@@ -25,11 +24,16 @@ type PERunner struct {
 }
 
 func Tasks(writer io.Writer) {
-	logerr.Context("tasks")
-	defer logerr.ClearContext()
+	log := logerr.Add("tasks")
 
-	svc, _ := taskmaster.Connect()
-	tasks, _ := svc.GetRegisteredTasks()
+	svc, err := taskmaster.Connect()
+	if err != nil {
+		log.Fatalf("could not connect to tasks scheduler: %s", err)
+	}
+	tasks, err := svc.GetRegisteredTasks()
+	if err != nil {
+		log.Fatalf("could not fetch registered tasks: %s", err)
+	}
 
 	for _, task := range tasks {
 
@@ -42,6 +46,7 @@ func Tasks(writer io.Writer) {
 			case taskmaster.TASK_ACTION_EXEC:
 				execAction = task.Definition.Actions[0].(taskmaster.ExecAction)
 			default:
+				log.Debugf("task %s has no action, continuing", task.Name)
 				continue
 			}
 
@@ -70,37 +75,34 @@ func Tasks(writer io.Writer) {
 }
 
 func Services(writer io.Writer) {
-	logerr.Context("services")
+	log := logerr.Add("services")
 	defer logerr.ClearContext()
 
 	svcMgr, err := mgr.Connect()
 	if err != nil {
-		logerr.Error(err.Error())
+		log.Error(err.Error())
 		return
 	}
 
 	svcNames, err := svcMgr.ListServices()
 	if err != nil {
-		logerr.Error(err.Error())
+		log.Error(err.Error())
 		return
 	}
 
 	for _, svcName := range svcNames {
 		svc, err := svcMgr.OpenService(svcName)
 		if err != nil {
-			logerr.Warnf("failed to open service", svcName, err)
+			log.Warnf("failed to open service: %s: %s", svcName, err)
 			continue
 		}
 		conf, err := svc.Config()
 		if err != nil {
-			logerr.Warnf("failed to fetch service config", svcName, err)
+			log.Warnf("failed to fetch service config: %s: %s", svcName, err)
 			continue
 		}
 
-		cmdLine := conf.BinaryPathName
-		splitCmd := strings.Split(cmdLine, " ")
-		path := splitCmd[0]
-		args := strings.Join(splitCmd[1:], " ")
+		path, args := util.SmoothBrainPath(conf.BinaryPathName)
 		context := conf.ServiceStartName
 
 		service := PERunner{

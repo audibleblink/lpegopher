@@ -20,7 +20,10 @@ func init() {
 	l := &logerr.Logger{
 		Level:  logerr.LogLevelInfo,
 		Output: os.Stderr,
-		// LogWrappDlledErrors: true,
+	}
+
+	if argv.Debug {
+		l.Level = logerr.LogLevelDebug
 	}
 
 	l.Context("lpegopher").SetAsGlobal()
@@ -41,6 +44,9 @@ func main() {
 		}
 	case argv.Process != nil:
 		dbInit()
+		if argv.Process.Drop {
+			dbDrop()
+		}
 		err := doProcessCmd(argv, cli)
 		if err != nil {
 			logerr.Fatalf("processing failed:", err)
@@ -92,4 +98,19 @@ func dbInit() {
 			log.Errorf("tx commit failed %s", err)
 		}
 	}
+
+}
+
+func dbDrop() {
+	logerr.Debug("dropping database")
+	cypherQ, err := cypher.NewQuery()
+	if err != nil {
+		logerr.Fatalf("drop failed: %s", err.Error())
+	}
+	cypherQ.Append(`
+		CALL apoc.periodic.iterate(
+			'MATCH (n) RETURN n', 'DETACH DELETE n'
+			, {batchSize:1000})
+	`).ExecuteW()
+
 }

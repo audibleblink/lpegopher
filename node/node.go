@@ -1,20 +1,19 @@
 package node
 
 const (
-	WriteOwner   = "WRITE_OWNER"
-	WriteDACL    = "WRITE_DACL"
-	WriteProp    = "WRITE_PROP"
-	GenericAll   = "GENERIC_ALL"
-	GenericWrite = "GENERIC_WRITE"
+	WriteOwner    = "WRITE_OWNER"
+	WriteDACL     = "WRITE_DACL"
+	GenericAll    = "GENERIC_ALL"
+	GenericWrite  = "GENERIC_WRITE"
+	ControlAccess = "CONTROL_ACCESS"
 )
 
 var AbusableAces = map[string]bool{
-	WriteOwner:   true,
-	WriteDACL:    true,
-	WriteProp:    true,
-	GenericAll:   true,
-	GenericWrite: true,
-	// "CONTROL_ACCESS": true,
+	WriteOwner:    true,
+	WriteDACL:     true,
+	GenericAll:    true,
+	GenericWrite:  true,
+	ControlAccess: true,
 }
 
 const (

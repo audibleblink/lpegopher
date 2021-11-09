@@ -13,6 +13,8 @@ type ArgType struct {
 	Collect   *collectCmd   `arg:"subcommand" help:"Collect necsesary data"`
 	Process   *processCmd   `arg:"subcommand" help:"Process data and populate neo4j"`
 	GetSystem *getSystemCmd `arg:"subcommand" help:"Utility for acquiring SYSTEM"`
+
+	Debug bool `arg:"-v" help:"verbose output" default:"false"`
 }
 
 type getSystemCmd struct {
@@ -22,8 +24,9 @@ type getSystemCmd struct {
 }
 
 type processCmd struct {
-	PEs     string `arg:"-p" help:"Path to collected PEs json" default:"pes.json"`
-	Runners string `arg:"-r" help:"Path to collected Runners json" default:"runners.json"`
+	PEs     string `arg:"-p" help:"Path to collected PEs json" default:"./pes.json"`
+	Runners string `arg:"-r" help:"Path to collected Runners json" default:"./runners.json"`
+	Drop    bool   `help:"drop the database before processing" default:"false"`
 
 	neoConnection
 }

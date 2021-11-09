@@ -9,16 +9,19 @@ import (
 	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/node"
+	"github.com/audibleblink/pegopher/util"
 )
 
 func CreatePEFromJSON(jsonLine []byte) (cypherQ *cypher.Query, err error) {
 	var inode collectors.INode
+	rand := util.Rand()
+
 	err = json.Unmarshal(jsonLine, &inode)
 	if err != nil {
 		return
 	}
 
-	inodeAlias := fmt.Sprintf("pe%d", CurrentBatchLen)
+	nVar := fmt.Sprintf("pe_%s", rand)
 	cypherQ, err = cypher.NewQuery()
 	if err != nil {
 		return nil, err
@@ -29,24 +32,31 @@ func CreatePEFromJSON(jsonLine []byte) (cypherQ *cypher.Query, err error) {
 			node.Prop.Name:   inode.Name,
 			node.Prop.Parent: inode.Parent,
 		}
+		label := fmt.Sprintf("%s:iNode", inode.Type)
 		cypherQ.Create(
-			inodeAlias, inode.Type, node.Prop.Path, inode.Path,
+			nVar, label, node.Prop.Path, inode.Path,
 		).Set(
-			inodeAlias, props,
-		)
+			nVar, props,
+		).With(nVar)
+	} else {
+		return
 	}
 
-	// if cache.Add(node.Principal, inode.DACL.Owner) {
-	// 	cypherQ.Create("", node.Principal, node.Prop.Name, inode.DACL.Owner)
-	// }
+	owner := fmt.Sprintf("owner_%s", rand)
+	if cache.Add(node.Principal, inode.DACL.Owner) {
+		cypherQ.Merge(
+			owner, node.Principal, node.Prop.Name, inode.DACL.Owner,
+		).Relate(owner, "OWNS", nVar).With(nVar)
 
-	// if cache.Add(node.Principal, inode.DACL.Group) {
-	// 	cypherQ.Create("", node.Principal, node.Prop.Name, inode.DACL.Group)
-	// }
-	count := 0
+	} else {
+		cypherQ.Match(
+			owner, node.Principal, node.Prop.Name, inode.DACL.Owner,
+		).Relate(owner, "OWNS", nVar).With(nVar)
+
+	}
+
+	id := 0
 	for _, ace := range inode.DACL.Aces {
-		prince := fmt.Sprintf("prpl%d", count)
-		cypherQ.Merge(prince, node.Principal, node.Prop.Name, ace.Principal)
 
 		abusables := []string{}
 		for _, priv := range ace.Rights {
@@ -56,15 +66,45 @@ func CreatePEFromJSON(jsonLine []byte) (cypherQ *cypher.Query, err error) {
 		}
 
 		if len(abusables) > 0 {
+			pid := fmt.Sprintf("prncpl_%d", id)
+			newPrcpl := cache.Add(node.Principal, ace.Principal)
+			if newPrcpl {
+				cypherQ.Create(
+					pid, node.Principal, node.Prop.Name, ace.Principal,
+				).With(nVar)
+			} else {
+				cypherQ.Match(pid, node.Principal, node.Prop.Name, ace.Principal)
+			}
+
 			for idx, priv := range abusables {
-				cypherQ.Relate(prince, priv, inodeAlias)
+				cypherQ.Relate(pid, priv, nVar)
 				if idx+1 == len(abusables) {
-					cypherQ.EndMerge()
+					cypherQ.With(nVar)
 				}
 			}
+			id++
 		}
-		count++
 	}
+
+	// impID := fmt.Sprintf("imp%d", id*CurrentBatchLen)
+	// for _, imp := range inode.Imports {
+	// 	cypherQ.Merge(impID, "Import", "name", imp.Host)
+	// 	// imp.Functions
+	// 	for idx, fn := range imp.Functions {
+	// 		q := fmt.Sprintf(
+	// 			"MERGE (%s)-[:%s {fn: %s}]->(%s)",
+	// 			inodeAlias,
+	// 			"IMPORTS",
+	// 			fn,
+	// 			imp.Host,
+	// 		)
+	// 		cypherQ.Append(q)
+
+	// 		if idx+1 == len(imp.Functions) {
+	// 			cypherQ.EndMerge()
+	// 		}
+	// 	}
+	// }
 
 	return
 }
@@ -93,59 +133,6 @@ func BulkRelateFileTree() (err error) {
 		if err != nil {
 			err = log.Wrap(err)
 			return
-		}
-
-	}
-	return
-}
-
-func RelatePEs(jsonLine []byte) (cypherQ *cypher.Query, err error) {
-	log := logerr.Add("pe relation")
-
-	MaxBatchSize = 10
-
-	var inode collectors.INode
-	err = json.Unmarshal(jsonLine, &inode)
-	if err != nil {
-		err = log.Wrap(err)
-		return
-	}
-
-	nLbl := fmt.Sprintf("pe%d", CurrentBatchLen)
-
-	cypherQ, err = cypher.NewQuery()
-	if err != nil {
-		err = log.Wrap(err)
-		return
-	}
-
-	id := 0
-	for _, ace := range inode.DACL.Aces {
-
-		abusables := []string{}
-		for _, priv := range ace.Rights {
-			if node.AbusableAces[priv] {
-				abusables = append(abusables, priv)
-			}
-		}
-
-		if len(abusables) > 0 {
-			if id == 0 {
-				// Only match the inode if we're going to merge abusables
-				// since we can't 'undo' the cypherQ Match if we do it
-				// earlier
-				cypherQ.Match(nLbl, inode.Type, node.Prop.Path, inode.Path)
-			}
-			prnpl := fmt.Sprintf("p_%d", id)
-			cypherQ.Match(prnpl, node.Principal, node.Prop.Name, ace.Principal)
-
-			for idx, priv := range abusables {
-				cypherQ.Relate(prnpl, priv, nLbl)
-				if idx+1 == len(abusables) {
-					cypherQ.EndMerge()
-				}
-			}
-			id++
 		}
 
 	}

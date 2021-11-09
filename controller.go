@@ -9,12 +9,12 @@ import (
 
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 
-	peProcess := processor.QueryBuilder(processor.CreatePEFromJSON)
-	logerr.Info("creating inodes")
-	err = peProcess(args.Process.PEs)
-	if err != nil {
-		return
-	}
+	// peProcess := processor.QueryBuilder(processor.CreatePEFromJSON)
+	// logerr.Info("creating inodes")
+	// err = peProcess(args.Process.PEs)
+	// if err != nil {
+	// 	return
+	// }
 
 	runnerProcess := processor.QueryBuilder(processor.CreateRunnerFromJSON)
 	logerr.Info("creating runners")
@@ -23,11 +23,11 @@ func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 		return
 	}
 
-	logerr.Info("creating inode relationships")
-	err = processor.BulkRelateFileTree()
-	if err != nil {
-		return
-	}
+	// logerr.Info("creating inode relationships")
+	// err = processor.BulkRelateFileTree()
+	// if err != nil {
+	// 	return
+	// }
 
 	logerr.Info("creating runner relationships")
 	err = processor.BulkRelateRunners()
