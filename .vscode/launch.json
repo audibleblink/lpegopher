@@ -10,6 +10,7 @@
 
 
 
+
         {
             "name": "Collect PEs",
             "type": "go",
@@ -20,7 +21,9 @@
                 "collect",
                 "pes",
                 "--path",
-                "c:\\users\\user\\appdata",
+                "c:\\",
+                "-v",
+                // "c:\\users\\user\\appdata",
                 "-o",
                 "data/pes.json"
             ],

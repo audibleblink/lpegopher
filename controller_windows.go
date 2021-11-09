@@ -15,6 +15,7 @@ import (
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	logerr.Context("doCollectCmd")
+	logerr.Info("collection started")
 	defer logerr.ClearContext()
 
 	switch {

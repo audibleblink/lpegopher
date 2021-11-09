@@ -15,6 +15,7 @@ import (
 	"github.com/audibleblink/pegopher/node"
 	"github.com/audibleblink/pegopher/util"
 	winacl "github.com/kgoins/go-winacl/pkg"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sys/windows"
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"
@@ -50,9 +51,31 @@ type ReadableAce struct {
 }
 
 func PEs(writer io.Writer, dir string) {
+	log := logerr.Add("pe collector")
+	g := new(errgroup.Group)
+
 	walkStartPath, _ := filepath.Abs(dir)
 	walkFunction := walkFunctionGenerator(writer)
-	filepath.WalkDir(walkStartPath, walkFunction)
+
+	objs, err := os.ReadDir(walkStartPath)
+	if err != nil {
+		log.Fatalf("could not read %s", walkStartPath)
+	}
+
+	for _, obj := range objs {
+		if obj.IsDir() {
+			path := fmt.Sprintf(`%s%s`, walkStartPath, obj.Name())
+			logerr.Debugf("forking collection of %s", path)
+			g.Go(func() error {
+				err := filepath.WalkDir(path, walkFunction)
+				return err
+			})
+		}
+	}
+	if err := g.Wait(); err == nil {
+		logerr.Info("All collection jobs complete")
+	}
+
 }
 
 func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {

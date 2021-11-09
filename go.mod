@@ -34,6 +34,7 @@ require (
 	github.com/audibleblink/getsystem v0.1.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/neo4j/neo4j-go-driver/v4 v4.3.3
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.6 // indirect
 )
 
