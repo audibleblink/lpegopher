@@ -61,9 +61,10 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 		// use a set to track if a report for a PE's parent directory
 		// has already been printed
 		printedParentDir := make(map[string]bool)
+		log := logerr.Add("dirwalk")
 
 		if err != nil {
-			logerr.Warnf("HUH", err)
+			log.Warnf("HUH", err)
 		}
 
 		if info.IsDir() {
@@ -86,13 +87,13 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 			report := newPEReport(path)
 			peFile, err := newPEFile(report.Path)
 			if err != nil {
-				logerr.Warnf("pe parsing failed", err)
+				log.Debugf("pe parsing failed: %s", err)
 				return nil
 			}
 
 			err = populatePEReport(report, peFile)
 			if err != nil {
-				logerr.Warnf("could not generate report", err.Error())
+				log.Warnf("could not generate report for %s: %s", path, err)
 				return nil
 			}
 
