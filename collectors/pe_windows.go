@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/Microsoft/go-winio"
 	"github.com/audibleblink/pegopher/logerr"
@@ -79,11 +80,11 @@ func PEs(writer io.Writer, dir string) {
 }
 
 func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
+	// use a set to track if a report for a PE's parent directory
+	// has already been printed
+	printedParentDir := &sync.Map{}
 
 	return func(path string, info os.DirEntry, err error) error {
-		// use a set to track if a report for a PE's parent directory
-		// has already been printed
-		printedParentDir := make(map[string]bool)
 		log := logerr.Add("dirwalk")
 
 		if err != nil {
@@ -100,11 +101,10 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 
 		if isExe || isDll {
 			parent := filepath.Dir(path)
-			if !printedParentDir[parent] {
-				// first time finding a PE in this directory
+			_, alreadyDidIt := printedParentDir.LoadOrStore(parent, true)
+			if !alreadyDidIt {
 				dirReport := newDirectoryReport(parent)
 				jsPrint(writer, dirReport)
-				printedParentDir[parent] = true
 			}
 
 			report := newPEReport(path)
@@ -164,7 +164,8 @@ func newPEFile(path string) (pefile *pe.PEFile, err error) {
 		return
 	}
 
-	return pe.NewPEFile(peReader)
+	pefile, err = pe.NewPEFile(peReader)
+	return
 }
 
 func populatePEReport(report *INode, peFile *pe.PEFile) error {

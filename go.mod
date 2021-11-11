@@ -17,7 +17,6 @@ require (
 	github.com/dchest/siphash v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/kgoins/go-winacl v0.2.0
 	github.com/mindstand/go-cypherdsl v0.2.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/rickb777/date v1.14.2 // indirect
@@ -30,15 +29,18 @@ require (
 require (
 	github.com/Velocidex/ordereddict v0.0.0-20200723153557-9460a6764ab8 // indirect
 	github.com/Velocidex/pkcs7 v0.0.0-20210524015001-8d1eee94a157 // indirect
-	github.com/audibleblink/bamflags v0.2.0 // indirect
+	github.com/audibleblink/bamflags v1.0.0 // indirect
 	github.com/audibleblink/getsystem v0.1.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/kgoins/go-winacl/pkg v0.0.0-00010101000000-000000000000
 	github.com/neo4j/neo4j-go-driver/v4 v4.3.3
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.6 // indirect
 )
 
 replace (
-	github.com/kgoins/go-winacl => github.com/audibleblink/go-winacl v0.0.2
-	github.com/kgoins/go-winacl/pkg => github.com/audibleblink/go-winacl v0.0.2
+	// github.com/kgoins/go-winacl => github.com/audibleblink/go-winacl v0.0.2
+	// github.com/kgoins/go-winacl/pkg => github.com/audibleblink/go-winacl v0.0.2
+	github.com/kgoins/go-winacl => c:\users\user\code\go-winacl
+	github.com/kgoins/go-winacl/pkg => c:\users\user\code\go-winacl
 )

@@ -136,12 +136,11 @@ func Rand() string {
 
 func SmoothBrainPath(cmdline string) (bin, args string) {
 	if strings.HasPrefix(cmdline, `"`) {
-		matchedQuoteIdx := strings.Index(cmdline[1:], `"`)
 		quoteCharOffset := 1
-		endOfCmd := len(cmdline) - len(cmdline[matchedQuoteIdx:]) + quoteCharOffset
+		secondQuoteIdx := strings.Index(cmdline[quoteCharOffset:], `"`)
+		endOfCmd := len(cmdline) - len(cmdline[secondQuoteIdx:]) + quoteCharOffset
 		bin = cmdline[quoteCharOffset:endOfCmd]
-		args = cmdline[endOfCmd+quoteCharOffset:]
-		args = strings.TrimSpace(args)
+		args = strings.TrimSpace(cmdline[endOfCmd+quoteCharOffset:])
 		return
 	}
 

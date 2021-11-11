@@ -4,23 +4,13 @@ import (
 	"bufio"
 	"errors"
 	"os"
-	"strings"
 
 	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/util"
-	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
-var (
-	MaxBatchSize = 1
-)
-
-var (
-	CurrentBatchLen = 1
-	CurrentBatch    = &strings.Builder{}
-	BatchCounter    = 0
-)
+const goRoutineLimit = 100
 
 type queryBuilder func([]byte) (*cypher.Query, error)
 
@@ -38,16 +28,22 @@ func QueryBuilder(callback queryBuilder) func(string) error {
 		if err != nil {
 			log.Fatalf("could not get line count for %s", path)
 		}
-		log.Infof("processing %d lines with batch size %d == %d batches", lineCount, MaxBatchSize, lineCount*1.0/MaxBatchSize+1)
-
+		log.Infof("processing %d inode entries", lineCount)
 		file.Seek(0, 0)
 
 		scanner := bufio.NewScanner(file)
-		buf := make([]byte, 0, 8*1024)
+		buf := make([]byte, 0, 128*1024)
 		scanner.Buffer(buf, 1024*1024)
 		lineNumber := 0
+		tenPercent := lineCount / 10
+
+		wg := util.NewLimitedWaitGroup(goRoutineLimit)
 		for scanner.Scan() {
 			lineNumber += 1
+			if lineCount%tenPercent == 0 {
+				log.Infof("%d lines processed - %s%% done...", lineNumber, lineCount/lineNumber)
+			}
+
 			text := scanner.Bytes()
 
 			cypherQ, err := callback(text)
@@ -56,42 +52,24 @@ func QueryBuilder(callback queryBuilder) func(string) error {
 				continue
 			}
 
-			// CurrentBatch.WriteString(cypherQ.String())
-			if CurrentBatchLen%MaxBatchSize == 0 || lineNumber == lineCount {
-				BatchCounter++
-				log.Infof("commiting batch transaction %d", BatchCounter)
-				CurrentBatch.WriteString(cypherQ.String())
-				cypherQ.Raw(CurrentBatch.String()).Return()
-				err = cypherQ.ExecuteW()
+			go (func(query *cypher.Query) error {
+				wg.Add(1)
+				defer wg.Done()
+
+				err = query.Return().ExecuteW()
 				if err != nil {
 					err = errors.Unwrap(err)
-					switch e := err.(type) {
-					case *neo4j.Neo4jError:
-						if e.Code == "Neo.ClientError.Schema.ConstraintValidationFailed" {
-							log.Debugf("duplicate entry (%s)", e.Msg)
-							continue
-						} else {
-							log.Errorf("neo  %s", err)
-							// continue
-						}
-					default:
-						log.Errorf("query failed %s", err)
-						continue
-					}
+					log.Errorf("query failed %s", err)
 				}
-				CurrentBatch.Reset()
-				CurrentBatchLen = 1
-			} else {
-				if len(cypherQ.String()) > 0 {
-					CurrentBatch.WriteString(cypherQ.String())
-					CurrentBatchLen++
-				}
-			}
+				return err
+			})(cypherQ)
 		}
 
 		if err := scanner.Err(); err != nil {
-			log.Errorf("scanner quit: %s", err)
+			log.Errorf("scanner quit on line %d: %s", lineNumber, err)
 		}
+
+		wg.Wait()
 		return err
 	}
 
