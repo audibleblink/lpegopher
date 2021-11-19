@@ -14,6 +14,6 @@ func doCollectCmd(a args.ArgType, cli *arg.Parser) error {
 	return fmt.Errorf("collect functionality is only available on Windows")
 }
 
-func getSystem(pid int) error {
+func getSystem() error {
 	return logerr.Wrap(fmt.Errorf("only available on Windows"))
 }

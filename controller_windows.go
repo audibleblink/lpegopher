@@ -86,3 +86,13 @@ func all() {
 
 	wg.Wait()
 }
+
+func getSystem() error {
+
+	pid := argv.GetSystem.PID
+	if pid == 0 {
+		pid = procs.PidForName("winlogon.exe")
+		logerr.Infof("stealing winlogon token from pid %d", pid)
+	}
+	err := getsystem.InNewProcess(pid, `c:\windows\system32\cmd.exe`, false)
+}

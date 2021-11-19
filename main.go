@@ -5,11 +5,9 @@ import (
 	"os"
 
 	"github.com/alexflint/go-arg"
-	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/rpcls/pkg/procs"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
@@ -36,15 +34,11 @@ func main() {
 
 	switch {
 	case argv.GetSystem != nil:
-		pid := argv.GetSystem.PID
-		if pid == 0 {
-			pid = procs.PidForName("winlogon.exe")
-			logerr.Infof("stealing winlogon token from pid %d", pid)
-		}
-		err := getsystem.InNewProcess(pid, `c:\windows\system32\cmd.exe`, false)
+		err := getSystem()
 		if err != nil {
 			logerr.Fatalf("getsystem failed: %v", err)
 		}
+
 	case argv.Collect != nil:
 		err := doCollectCmd(argv, cli)
 		if err != nil {
@@ -66,6 +60,7 @@ func main() {
 			logerr.Fatal("you must choose a post-processing task")
 		}
 
+		// dbDrop(true)
 		err := doProcessCmd(argv, cli)
 		if err != nil {
 			logerr.Fatalf("processing failed: %v", err)
@@ -89,35 +84,35 @@ func dbInit() {
 		log.Fatal(err.Error())
 	}
 
-	cypherQ, err := cypher.NewQuery()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	// cypherQ, err := cypher.NewQuery()
+	// if err != nil {
+	// 	log.Fatal(err.Error())
+	// }
+	//
+	// tx, err := cypherQ.Begin()
+	// if err != nil {
+	// 	log.Fatal(err.Error())
+	// }
+	// defer tx.Rollback()
 
-	tx, err := cypherQ.Begin()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	defer tx.Rollback()
-
-	tx.Run("CREATE CONSTRAINT ON (a:Exe) ASSERT a.path IS UNIQUE;", nil)
-	tx.Run("CREATE CONSTRAINT ON (a:Dll) ASSERT a.path IS UNIQUE;", nil)
-	tx.Run("CREATE CONSTRAINT ON (a:Directory) ASSERT a.path IS UNIQUE;", nil)
-	tx.Run("CREATE CONSTRAINT ON (a:Principal) ASSERT a.name IS UNIQUE;", nil)
-	tx.Run("CREATE CONSTRAINT ON (a:Runner) ASSERT a.name IS UNIQUE;", nil)
-	tx.Run("CREATE CONSTRAINT ON (a:Dep) ASSERT a.name IS UNIQUE;", nil)
-
-	err = tx.Commit()
-	if err != nil {
-		switch e := err.(type) {
-		case *neo4j.Neo4jError:
-			if e.Code == "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists" {
-				log.Debug("node constraints already  in place, skipping")
-			}
-		default:
-			log.Errorf("tx commit failed %s", err)
-		}
-	}
+	// tx.Run("CREATE CONSTRAINT ON (a:Exe) ASSERT a.path IS UNIQUE;", nil)
+	// tx.Run("CREATE CONSTRAINT ON (a:Dll) ASSERT a.path IS UNIQUE;", nil)
+	// tx.Run("CREATE CONSTRAINT ON (a:Directory) ASSERT a.path IS UNIQUE;", nil)
+	// tx.Run("CREATE CONSTRAINT ON (a:Principal) ASSERT a.name IS UNIQUE;", nil)
+	// tx.Run("CREATE CONSTRAINT ON (a:Runner) ASSERT a.name IS UNIQUE;", nil)
+	// tx.Run("CREATE CONSTRAINT ON (a:Dep) ASSERT a.name IS UNIQUE;", nil)
+	//
+	// err = tx.Commit()
+	// if err != nil {
+	// 	switch e := err.(type) {
+	// 	case *neo4j.Neo4jError:
+	// 		if e.Code == "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists" {
+	// 			log.Debug("node constraints already  in place, skipping")
+	// 		}
+	// 	default:
+	// 		log.Errorf("tx commit failed %s", err)
+	// 	}
+	// }
 
 }
 

@@ -2,9 +2,9 @@
 
 package args
 
-type dummy struct{}
+type dummy2 struct{}
 type collectCmd struct {
-	Tasks    *dummy `arg:"subcommand" help:"Only available on Windows"`
-	Services *dummy `arg:"subcommand" help:"Only available on Windows"`
-	PEs      *dummy `arg:"subcommand" help:"Only available on Windows"`
+	Tasks    *dummy2 `arg:"subcommand" help:"Only available on Windows"`
+	Services *dummy2 `arg:"subcommand" help:"Only available on Windows"`
+	PEs      *dummy2 `arg:"subcommand" help:"Only available on Windows"`
 }
