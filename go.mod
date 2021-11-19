@@ -34,6 +34,7 @@ require (
 	github.com/audibleblink/rpcls v0.0.0-20210822225556-d855a04ad117
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kgoins/go-winacl/pkg v0.0.0-00010101000000-000000000000
+	github.com/minio/highwayhash v1.0.2
 	github.com/neo4j/neo4j-go-driver/v4 v4.3.3
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.6 // indirect

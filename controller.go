@@ -8,25 +8,27 @@ import (
 )
 
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
+	log := logerr.Add("postprocessing")
 
-	runnerFile := args.PostProcess.Runners
-
-	if runnerFile != "" {
-		runnerProcess := processor.QueryBuilder(processor.CreateRunnerFromJSON)
-		logerr.Info("creating runners")
-		err = runnerProcess(runnerFile)
-		if err != nil {
-			return
-		}
+	log.Info("creating file and principal nodes")
+	err = processor.InsertAllNodes()
+	if err != nil {
+		return
 	}
 
-	logerr.Info("creating filetree relationships")
+	log.Info("creating runner nodes")
+	err = processor.InsertAllRunners()
+	if err != nil {
+		return
+	}
+
+	log.Info("creating filetree relationships")
 	err = processor.BulkRelateFileTree()
 	if err != nil {
 		return
 	}
 
-	logerr.Info("creating runner relationships")
+	log.Info("creating runner relationships")
 	err = processor.BulkRelateRunners()
 	if err != nil {
 		return

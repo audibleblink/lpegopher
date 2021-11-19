@@ -1,9 +1,10 @@
 package collectors
 
 import (
+	"bufio"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -15,66 +16,54 @@ import (
 	"github.com/audibleblink/pegopher/node"
 	"github.com/audibleblink/pegopher/util"
 	winacl "github.com/kgoins/go-winacl/pkg"
-	"golang.org/x/sync/errgroup"
 	"golang.org/x/sys/windows"
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"
 )
 
-type DACL struct {
-	Owner string        `json:"Owner"`
-	Group string        `json:"Group"`
-	Aces  []ReadableAce `json:"Aces"`
+const (
+	ExeFile       = "exes.csv"
+	DllFile       = "dlls.csv"
+	DirFile       = "dirs.csv"
+	PrincipalFile = "principals.csv"
+	RelsFile      = "relationships.csv"
+	DepsFile      = "deps.csv"
+	RunnersFile   = "runners.csv"
+)
+
+var (
+	f0, _ = os.OpenFile(ExeFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f1, _ = os.OpenFile(DllFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f2, _ = os.OpenFile(DirFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f3, _ = os.OpenFile(PrincipalFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f4, _ = os.OpenFile(RelsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f5, _ = os.OpenFile(DepsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f6, _ = os.OpenFile(RunnersFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	key, _ = hex.DecodeString("900F02030405060708090A0B9C0D0E0FF0E0D0C0B0A090807060504030201091")
+	cache  = &sync.Map{}
+	DoJSON = false
+)
+
+var writers = map[string]*bufio.Writer{
+	ExeFile:       bufio.NewWriter(f0),
+	DllFile:       bufio.NewWriter(f1),
+	DirFile:       bufio.NewWriter(f2),
+	PrincipalFile: bufio.NewWriter(f3),
+	RelsFile:      bufio.NewWriter(f4),
+	DepsFile:      bufio.NewWriter(f5),
+	RunnersFile:   bufio.NewWriter(f6),
 }
 
-// INode contains the parsed import and exports of the INode
-type INode struct {
-	Name     string   `json:"Name"`
-	Path     string   `json:"Path"`
-	Parent   string   `json:"Dir"`
-	Type     string   `json:"Type"`
-	Imports  []string `json:"Imports"`
-	Forwards []string `json:"Forwards"`
-	DACL     DACL     `json:"DACL"`
-}
-
-type ReadableAce struct {
-	Principal string   `json:"Principal"`
-	Rights    []string `json:"Rights"`
-}
-
-func PEs(writer io.Writer, dir string) {
+func PEs(writer *bufio.Writer, dir string) {
 	log := logerr.Add("pe collector")
-
 	walkStartPath, _ := filepath.Abs(dir)
 	walkFunction := walkFunctionGenerator(writer)
-
-	objs, err := os.ReadDir(walkStartPath)
-	if err != nil {
-		log.Fatalf("could not read %s", walkStartPath)
-	}
-
-	g := new(errgroup.Group)
-	for _, obj := range objs {
-		if obj.IsDir() {
-			path := filepath.Join(walkStartPath, obj.Name())
-			log.Debugf("forking collection of %s", path)
-			g.Go(func() error {
-				err := filepath.WalkDir(path, walkFunction)
-				log.Infof("completed collection of %s", path)
-				return err
-			})
-		}
-	}
-	if err := g.Wait(); err == nil {
-		logerr.Info("All collection jobs complete")
-	}
+	filepath.WalkDir(walkStartPath, walkFunction)
+	log.Infof("completed collection of %s", walkStartPath)
 }
 
-func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
-	// use a set to track if a report for a PE's parent directory
-	// has already been printed
-	printedParentDir := &sync.Map{}
+func walkFunctionGenerator(writer *bufio.Writer) fs.WalkDirFunc {
 
 	return func(path string, info os.DirEntry, err error) error {
 		log := logerr.Add("dirwalk")
@@ -93,10 +82,10 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 
 		if isExe || isDll {
 			parent := filepath.Dir(path)
-			_, alreadyDidIt := printedParentDir.LoadOrStore(parent, true)
+			_, alreadyDidIt := cache.LoadOrStore(parent, true)
 			if !alreadyDidIt {
 				dirReport := newDirectoryReport(parent)
-				jsPrint(writer, dirReport)
+				doPrint(writer, dirReport)
 			}
 
 			report := newPEReport(path)
@@ -114,7 +103,7 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 				return nil
 			}
 
-			jsPrint(writer, report)
+			doPrint(writer, report)
 
 		}
 		return nil
@@ -163,8 +152,26 @@ func newPEFile(path string) (pefile *pe.PEFile, err error) {
 }
 
 func populatePEReport(report *INode, peFile *pe.PEFile) error {
-	report.Imports = peFile.Imports()
-	report.Forwards = peFile.Forwards()
+
+	tracked := make(map[string]bool)
+	impHosts := make([]*Dep, 0)
+	for _, imp := range peFile.Imports() {
+		host := strings.Split(imp, "!")
+		cacheHit := tracked[host[0]]
+		if cacheHit {
+			continue
+		}
+		tracked[host[0]] = true
+		dep := &Dep{Name: host[0]}
+		impHosts = append(impHosts, dep)
+	}
+	report.Imports = impHosts
+
+	forwards := make([]*Dep, 0)
+	for _, fwd := range peFile.Forwards() {
+		forwards = append(forwards, &Dep{Name: fwd})
+	}
+	report.Forwards = forwards
 
 	dacl, err := pullDACL(report.Path)
 	if err != nil {
@@ -180,8 +187,8 @@ func pullDACL(path string) (DACL, error) {
 	if err != nil {
 		return dacl, err
 	}
-	dacl.Owner = sidResolve(sd.Owner)
-	dacl.Group = sidResolve(sd.Group)
+	dacl.Owner = &Principal{Name: sidResolve(sd.Owner)}
+	dacl.Group = &Principal{Name: sidResolve(sd.Group)}
 	for _, ace := range sd.DACL.Aces {
 		dacl.Aces = append(dacl.Aces, newReadableAce(ace))
 	}
@@ -213,12 +220,14 @@ func newReadableAce(ace winacl.ACE) ReadableAce {
 
 	switch ace.ObjectAce.(type) {
 	case winacl.BasicAce:
-		rAce.Principal = sidResolve(ace.ObjectAce.GetPrincipal())
+		name := sidResolve(ace.ObjectAce.GetPrincipal())
+		rAce.Principal = &Principal{Name: name}
 
 	case winacl.AdvancedAce:
 		aa := ace.ObjectAce.(winacl.AdvancedAce)
 		sid := aa.GetPrincipal()
-		rAce.Principal = sidResolve(sid)
+		name := sidResolve(sid)
+		rAce.Principal = &Principal{Name: name}
 	}
 	return rAce
 }
@@ -249,7 +258,63 @@ func handleDirPerms(report *INode) error {
 	return nil
 }
 
-func jsPrint(writer io.Writer, report *INode) {
-	serialized, _ := json.Marshal(report)
-	fmt.Fprintln(writer, string(serialized))
+func doPrint(writer *bufio.Writer, report *INode) {
+
+	if DoJSON {
+		serialized, _ := json.Marshal(report)
+		fmt.Fprintln(writer, string(serialized))
+		return
+	}
+
+	var nodeID string
+	switch report.Type {
+	case node.Exe:
+		nodeID = report.Write(writers[ExeFile])
+	case node.Dll:
+		nodeID = report.Write(writers[DllFile])
+	case node.Dir:
+		nodeID = report.Write(writers[DirFile])
+	}
+
+	for _, ace := range report.DACL.Aces {
+		pID := ace.Principal.Write(writers[PrincipalFile])
+		for _, priv := range ace.Rights {
+			if node.AbusableAces[priv] {
+				rel := &Rel{
+					Start: pID,
+					Rel:   priv,
+					End:   nodeID,
+				}
+				rel.Write(writers[RelsFile])
+			}
+		}
+	}
+
+	for _, imp := range report.Imports {
+		impID := imp.Write(writers[DepsFile])
+
+		rel := &Rel{
+			Start: nodeID,
+			Rel:   Imports,
+			End:   impID,
+		}
+		rel.Write(writers[RelsFile])
+
+		rel = &Rel{
+			Start: impID,
+			Rel:   ImportedBy,
+			End:   nodeID,
+		}
+		rel.Write(writers[RelsFile])
+	}
+
+	for _, fwd := range report.Forwards {
+		fwdID := fwd.Write(writers[DepsFile])
+		rel := &Rel{
+			Start: nodeID,
+			Rel:   Forwards,
+			End:   fwdID,
+		}
+		rel.Write(writers[RelsFile])
+	}
 }

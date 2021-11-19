@@ -17,9 +17,6 @@
                 "--path",
                 "C:/Program Files",
                 "-v",
-                // "c:\\users\\user\\appdata",
-                "-o",
-                "data/programfiles.json"
             ],
             "envFile": "${workspaceFolder}/.env",
         },

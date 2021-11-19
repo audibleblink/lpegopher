@@ -22,11 +22,10 @@ const (
 	Dir       = "Directory"
 	Runner    = "Runner"
 	Principal = "Principal"
+	Dep       = "Dep"
 )
 
-var Prop validProps
-
-type validProps struct {
+var Prop = struct {
 	Name    string
 	Dir     string
 	Parent  string
@@ -35,17 +34,13 @@ type validProps struct {
 	Args    string
 	Exe     string
 	Context string
-}
-
-func init() {
-	Prop = validProps{
-		"name",
-		"dir",
-		"parent",
-		"path",
-		"type",
-		"args",
-		"exe",
-		"context",
-	}
+}{
+	"name",
+	"dir",
+	"parent",
+	"path",
+	"type",
+	"args",
+	"exe",
+	"context",
 }

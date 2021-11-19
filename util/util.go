@@ -23,10 +23,11 @@ func Lower(str string) string {
 }
 
 func PathFix(str string) string {
-	str = strings.Trim(str, `"`)
+	str = strings.ReplaceAll(str, `"`, "")
 	str = resolveEnvPath(str)
 	str = strings.ReplaceAll(str, `\`, "/")
-	// swap slack direction to avoid cross-platform issues
+	str = strings.ReplaceAll(str, `,`, `.`)
+	str = strings.Trim(str, " ")
 	return Lower(str)
 }
 

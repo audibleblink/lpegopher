@@ -52,17 +52,23 @@ func main() {
 		}
 	case argv.PostProcess != nil:
 		dbInit()
-		if argv.PostProcess.Drop {
-			dbDrop()
+		p := argv.PostProcess
+		if p.All != nil {
+			dbDrop(p.All.Drop)
+		} else if p.Runners != nil {
+			dbDrop(p.Runners.Drop)
+		} else if p.PEs != nil {
+			dbDrop(p.PEs.Drop)
+		} else if p.Relationships != nil {
+			dbDrop(p.Relationships.Drop)
+		} else {
+			cli.WriteHelp(os.Stderr)
+			logerr.Fatal("you must choose a post-processing task")
 		}
-		if argv.PostProcess.Runners == "" {
-			logerr.Fatal("supply runner file")
-		} else if argv.PostProcess.Runners != "" {
-			logerr.Fatal("--all and  --pe/--runner are mutually exclusive")
-		}
+
 		err := doProcessCmd(argv, cli)
 		if err != nil {
-			logerr.Fatalf("processing failed:", err)
+			logerr.Fatalf("processing failed: %v", err)
 		}
 	default:
 		cli.WriteHelp(os.Stderr)
@@ -72,12 +78,12 @@ func main() {
 
 func dbInit() {
 	log := logerr.Add("db init")
-	host := fmt.Sprintf("%s://%s", argv.Protocol, argv.Host)
+	host := fmt.Sprintf("%s://%s", argv.PostProcess.Protocol, argv.PostProcess.Host)
 
 	var err error
 	cypher.Driver, err = neo4j.NewDriver(
 		host,
-		neo4j.BasicAuth(argv.Username, argv.Password, ""),
+		neo4j.BasicAuth(argv.PostProcess.Username, argv.PostProcess.Password, ""),
 	)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -99,6 +105,7 @@ func dbInit() {
 	tx.Run("CREATE CONSTRAINT ON (a:Directory) ASSERT a.path IS UNIQUE;", nil)
 	tx.Run("CREATE CONSTRAINT ON (a:Principal) ASSERT a.name IS UNIQUE;", nil)
 	tx.Run("CREATE CONSTRAINT ON (a:Runner) ASSERT a.name IS UNIQUE;", nil)
+	tx.Run("CREATE CONSTRAINT ON (a:Dep) ASSERT a.name IS UNIQUE;", nil)
 
 	err = tx.Commit()
 	if err != nil {
@@ -114,16 +121,17 @@ func dbInit() {
 
 }
 
-func dbDrop() {
-	logerr.Debug("dropping database")
-	cypherQ, err := cypher.NewQuery()
-	if err != nil {
-		logerr.Fatalf("drop failed: %s", err.Error())
-	}
-	cypherQ.Append(`
-		CALL apoc.periodic.iterate(
+func dbDrop(doIt bool) {
+	if doIt {
+		logerr.Info("dropping database")
+		cypherQ, err := cypher.NewQuery()
+		if err != nil {
+			logerr.Fatalf("drop failed: %s", err.Error())
+		}
+		cypherQ.Append(`
+			CALL apoc.periodic.iterate(
 			'MATCH (n) RETURN n', 'DETACH DELETE n'
 			, {batchSize:1000})
-	`).ExecuteW()
-
+		`).ExecuteW()
+	}
 }

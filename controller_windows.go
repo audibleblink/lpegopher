@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	"bufio"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,6 +15,8 @@ import (
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	log := logerr.Add("doCollectCmd")
 	log.Info("collection started")
+
+	collectors.DoJSON = args.Collect.JSON
 
 	switch {
 	case args.Collect.All:
@@ -36,14 +38,16 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 		collectors.Services(out)
 	default:
 		cli.WriteHelp(os.Stderr)
-		os.Exit(1)
+		log.Fatal("you must choose a post-processing task")
 	}
+
+	log.Info("collection complete")
 	return
 }
 
-func setOutputWriter(outfile string) (output io.Writer, err error) {
+func setOutputWriter(outfile string) (output *bufio.Writer, err error) {
 	if outfile == "stdOut" {
-		output = os.Stdout
+		output = bufio.NewWriter(os.Stdout)
 		return
 	}
 
@@ -53,7 +57,8 @@ func setOutputWriter(outfile string) (output io.Writer, err error) {
 		return
 	}
 
-	return os.OpenFile(absFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(absFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	return bufio.NewWriter(f), err
 }
 
 func all() {
@@ -67,7 +72,7 @@ func all() {
 			return
 		}
 		collectors.PEs(out, startPath)
-	}("pes.json", `C:\`)
+	}("inodes.csv", `C:\`)
 
 	go func(file string) {
 		defer wg.Done()
@@ -77,7 +82,7 @@ func all() {
 		}
 		collectors.Tasks(out)
 		collectors.Services(out)
-	}("runners.json")
+	}("runners.csv")
 
 	wg.Wait()
 }

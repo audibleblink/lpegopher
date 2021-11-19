@@ -1,27 +1,20 @@
 package collectors
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/util"
 	"github.com/capnspacehook/taskmaster"
+	"github.com/minio/highwayhash"
 	"golang.org/x/sys/windows/svc/mgr"
 )
-
-type PERunner struct {
-	Name     string `json:"Name"`
-	Type     string `json:"Type"`
-	Exe      string `json:"Exe"`
-	Parent   string `json:"Parent"`   // Directory.Path
-	FullPath string `json:"FullPath"` // PE.Path
-	Args     string `json:"Args"`
-	Context  string `json:"Context"` // Principal.Name
-	RunLevel string `json:"RunLevel"`
-}
 
 func Tasks(writer io.Writer) {
 	log := logerr.Add("tasks")
@@ -57,19 +50,30 @@ func Tasks(writer io.Writer) {
 			fullPath := util.EvaluatePath(execAction.Path)
 			args := execAction.Args
 
+			exe := &INode{
+				Path:   fullPath,
+				Name:   filepath.Base(fullPath),
+				Parent: filepath.Dir(fullPath),
+			}
+
 			taschzk := PERunner{
 				Name:     task.Name,
 				Type:     "task",
-				Exe:      filepath.Base(fullPath),
 				Args:     args,
-				Parent:   filepath.Dir(fullPath),
-				FullPath: fullPath,
-				Context:  task.Definition.Context,
+				Exe:      exe,
+				Context:  &Principal{Name: task.Definition.Context},
 				RunLevel: task.Definition.Principal.RunLevel.String(),
 			}
 
-			jason, _ := json.Marshal(taschzk)
-			fmt.Fprintln(writer, string(jason))
+			if DoJSON {
+				jason, _ := json.Marshal(taschzk)
+				fmt.Fprintln(writer, string(jason))
+				return
+			}
+
+			taschzk.Exe.Write(writers[ExeFile])
+			taschzk.Context.Write(writers[PrincipalFile])
+			taschzk.Write(writers[RunnersFile])
 		}
 	}
 }
@@ -103,19 +107,48 @@ func Services(writer io.Writer) {
 		}
 
 		path, args := util.SmoothBrainPath(conf.BinaryPathName)
-		context := conf.ServiceStartName
+		context := &Principal{Name: conf.ServiceStartName}
 
-		service := PERunner{
-			Name:     conf.DisplayName,
-			Type:     "service",
-			Exe:      filepath.Base(path),
-			Parent:   filepath.Dir(path),
-			Args:     args,
-			FullPath: path,
-			Context:  context,
+		exe := &INode{
+			Path:   path,
+			Name:   filepath.Base(path),
+			Parent: filepath.Dir(path),
 		}
 
-		jason, _ := json.Marshal(service)
-		fmt.Fprintln(writer, string(jason))
+		service := PERunner{
+			Name:    conf.DisplayName,
+			Type:    "service",
+			Args:    args,
+			Exe:     exe,
+			Context: context,
+		}
+
+		if DoJSON {
+			jason, _ := json.Marshal(service)
+			fmt.Fprintln(writer, string(jason))
+			return
+		}
+
+		service.Exe.Write(writers[ExeFile])
+		service.Context.Write(writers[PrincipalFile])
+		service.Write(writers[RunnersFile])
 	}
+}
+
+func hashFor(data string) string {
+	data = util.PathFix(data)
+	hash, err := highwayhash.New(key)
+	if err != nil {
+		fmt.Printf("Failed to create HighwayHash instance: %v", err) // add error handling
+		os.Exit(1)
+	}
+
+	txt := strings.NewReader(data)
+	if _, err = io.Copy(hash, txt); err != nil {
+		fmt.Printf("Failed to read from file: %v", err) // add error handling
+		os.Exit(1)
+	}
+
+	checksum := hash.Sum(nil)
+	return hex.EncodeToString(checksum)
 }
