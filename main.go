@@ -5,9 +5,11 @@ import (
 	"os"
 
 	"github.com/alexflint/go-arg"
+	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/rpcls/pkg/procs"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
@@ -30,22 +32,33 @@ func init() {
 }
 
 func main() {
+	args.Args = argv
 
 	switch {
 	case argv.GetSystem != nil:
-		err := getSystem(argv.GetSystem.PID)
+		pid := argv.GetSystem.PID
+		if pid == 0 {
+			pid = procs.PidForName("winlogon.exe")
+			logerr.Infof("stealing winlogon token from pid %d", pid)
+		}
+		err := getsystem.InNewProcess(pid, `c:\windows\system32\cmd.exe`, false)
 		if err != nil {
-			logerr.Fatalf("getsystem failed:", err)
+			logerr.Fatalf("getsystem failed: %v", err)
 		}
 	case argv.Collect != nil:
 		err := doCollectCmd(argv, cli)
 		if err != nil {
-			logerr.Fatalf("collection failed:", err)
+			logerr.Fatalf("collection failed: %v", err)
 		}
-	case argv.Process != nil:
+	case argv.PostProcess != nil:
 		dbInit()
-		if argv.Process.Drop {
+		if argv.PostProcess.Drop {
 			dbDrop()
+		}
+		if argv.PostProcess.Runners == "" {
+			logerr.Fatal("supply runner file")
+		} else if argv.PostProcess.Runners != "" {
+			logerr.Fatal("--all and  --pe/--runner are mutually exclusive")
 		}
 		err := doProcessCmd(argv, cli)
 		if err != nil {
@@ -59,12 +72,12 @@ func main() {
 
 func dbInit() {
 	log := logerr.Add("db init")
-	host := fmt.Sprintf("%s://%s", argv.Process.Protocol, argv.Process.Host)
+	host := fmt.Sprintf("%s://%s", argv.Protocol, argv.Host)
 
 	var err error
 	cypher.Driver, err = neo4j.NewDriver(
 		host,
-		neo4j.BasicAuth(argv.Process.Username, argv.Process.Password, ""),
+		neo4j.BasicAuth(argv.Username, argv.Password, ""),
 	)
 	if err != nil {
 		log.Fatal(err.Error())

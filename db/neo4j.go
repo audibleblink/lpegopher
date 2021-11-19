@@ -21,7 +21,7 @@ func Session() (gogm.SessionV2, error) {
 
 	config := gogm.SessionConfig{
 		AccessMode:   gogm.AccessModeWrite,
-		DatabaseName: argv.Process.Database,
+		DatabaseName: argv.Database,
 	}
 
 	cachedSession, err = gogm.G().NewSessionV2(config)

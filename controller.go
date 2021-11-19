@@ -9,21 +9,18 @@ import (
 
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 
-	peProcess := processor.QueryBuilder(processor.CreatePEFromJSON)
-	logerr.Info("creating inodes")
-	err = peProcess(args.Process.PEs)
-	if err != nil {
-		return
+	runnerFile := args.PostProcess.Runners
+
+	if runnerFile != "" {
+		runnerProcess := processor.QueryBuilder(processor.CreateRunnerFromJSON)
+		logerr.Info("creating runners")
+		err = runnerProcess(runnerFile)
+		if err != nil {
+			return
+		}
 	}
 
-	runnerProcess := processor.QueryBuilder(processor.CreateRunnerFromJSON)
-	logerr.Info("creating runners")
-	err = runnerProcess(args.Process.Runners)
-	if err != nil {
-		return
-	}
-
-	logerr.Info("creating inode relationships")
+	logerr.Info("creating filetree relationships")
 	err = processor.BulkRelateFileTree()
 	if err != nil {
 		return

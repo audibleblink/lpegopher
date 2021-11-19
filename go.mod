@@ -31,6 +31,7 @@ require (
 	github.com/Velocidex/pkcs7 v0.0.0-20210524015001-8d1eee94a157 // indirect
 	github.com/audibleblink/bamflags v1.0.0 // indirect
 	github.com/audibleblink/getsystem v0.1.1
+	github.com/audibleblink/rpcls v0.0.0-20210822225556-d855a04ad117
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kgoins/go-winacl/pkg v0.0.0-00010101000000-000000000000
 	github.com/neo4j/neo4j-go-driver/v4 v4.3.3

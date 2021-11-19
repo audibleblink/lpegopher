@@ -10,7 +10,7 @@ import (
 	"github.com/audibleblink/pegopher/util"
 )
 
-const goRoutineLimit = 100
+const goRoutineLimit = 50
 
 type queryBuilder func([]byte) (*cypher.Query, error)
 
@@ -32,16 +32,16 @@ func QueryBuilder(callback queryBuilder) func(string) error {
 		file.Seek(0, 0)
 
 		scanner := bufio.NewScanner(file)
-		buf := make([]byte, 0, 128*1024)
-		scanner.Buffer(buf, 1024*1024)
+		buf := make([]byte, 0, 2048*2048)
+		scanner.Buffer(buf, len(buf))
 		lineNumber := 0
-		tenPercent := lineCount / 10
+		checkpoint := lineCount / 20
 
 		wg := util.NewLimitedWaitGroup(goRoutineLimit)
 		for scanner.Scan() {
 			lineNumber += 1
-			if lineCount%tenPercent == 0 {
-				log.Infof("%d lines processed - %s%% done...", lineNumber, lineCount/lineNumber)
+			if lineNumber%checkpoint == 0 {
+				log.Infof("%d lines processed - %f%% done...", lineNumber, (float32(lineNumber)/float32(lineCount))*100)
 			}
 
 			text := scanner.Bytes()
@@ -52,23 +52,23 @@ func QueryBuilder(callback queryBuilder) func(string) error {
 				continue
 			}
 
-			go (func(query *cypher.Query) error {
-				wg.Add(1)
-				defer wg.Done()
-
+			wg.Add(1)
+			go (func(query *cypher.Query, lwg *util.LimitedWaitGroup) error {
 				err = query.Return().ExecuteW()
 				if err != nil {
 					err = errors.Unwrap(err)
 					log.Errorf("query failed %s", err)
 				}
+				lwg.Done()
 				return err
-			})(cypherQ)
+			})(cypherQ, wg)
 		}
 
 		if err := scanner.Err(); err != nil {
 			log.Errorf("scanner quit on line %d: %s", lineNumber, err)
 		}
 
+		log.Info("waiting on neo4j to report completion")
 		wg.Wait()
 		return err
 	}

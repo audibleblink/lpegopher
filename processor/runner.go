@@ -98,7 +98,7 @@ func BulkRelateRunners() (err error) {
 	// relate exes that are executed by a runner
 	cypherQ.Raw(`
 	CALL apoc.periodic.iterate(
-		"MATCH (r:Runner),(exe:Exe) WHERE r.path = exe.path RETURN r,exe",
+		"MATCH (r:Runner),(exe:Exe) WHERE r.parent+'/'+r.exe = exe.path RETURN r,exe",
 		"MERGE (exe)-[:EXECUTED_FROM]->(r)",
 		{batchSize:100, parallel: true, iterateList:true})
 	`)

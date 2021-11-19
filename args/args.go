@@ -1,5 +1,7 @@
 package args
 
+var Args ArgType
+
 type neoConnection struct {
 	Host     string `arg:"-d,env:NEO_HOST" default:"localhost"`
 	Password string `arg:"-w,env:NEO_PASSWORD" default:"neo4j"`
@@ -10,23 +12,20 @@ type neoConnection struct {
 }
 
 type ArgType struct {
-	Collect   *collectCmd   `arg:"subcommand" help:"Collect necsesary data"`
-	Process   *processCmd   `arg:"subcommand" help:"Process data and populate neo4j"`
-	GetSystem *getSystemCmd `arg:"subcommand" help:"Utility for acquiring SYSTEM"`
+	Collect     *collectCmd   `arg:"subcommand" help:"Collect necsesary data"`
+	PostProcess *processCmd   `arg:"subcommand" help:"Run Post-Processing tasks and populate neo4j"`
+	GetSystem   *getSystemCmd `arg:"subcommand" help:"Utility for acquiring SYSTEM"`
 
 	Debug bool `arg:"-v" help:"verbose output" default:"false"`
+
+	neoConnection
 }
 
 type getSystemCmd struct {
-	PID    int  `arg:"required" help:"Process running as system (ex:winlogon.exe)"`
-	Self   bool `arg:"" help:"Impersonate SYSTEM in current shell"`
-	RunCmd bool `arg:"" help:"Run cmd.exe with duplicated SYSTEM token"`
+	PID int `help:"Process PID that's running as system (defaults to winlogon.exe)"`
 }
 
 type processCmd struct {
-	PEs     string `arg:"-p" help:"Path to collected PEs json" default:"./pes.json"`
-	Runners string `arg:"-r" help:"Path to collected Runners json" default:"./runners.json"`
+	Runners string `arg:"-r" help:"Path to collected Runners json"`
 	Drop    bool   `help:"drop the database before processing" default:"false"`
-
-	neoConnection
 }

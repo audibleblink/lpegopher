@@ -96,7 +96,7 @@ func (d *Logger) Add(context string) Logger {
 }
 
 func (d Logger) Context(s string) *Logger {
-	d.context = s
+	d.context = fmt.Sprintf("%s: ", s)
 	d.template = "%-8s%s"
 	if d.context != "" {
 		d.template = fmt.Sprintf("%%-8s%s: %%s", d.context)

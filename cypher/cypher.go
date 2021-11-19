@@ -119,28 +119,28 @@ func (q *Query) Relate(var1, rel, var2 string) *Query {
 
 func (q *Query) ExecuteW() error {
 	sess := q.d.NewSession(neo4j.SessionConfig{})
-	_, err := sess.WriteTransaction(q.txWork)
+	result, err := sess.WriteTransaction(q.txWork)
 	if err != nil {
 		return q.l.Wrap(err)
 	}
 
-	// var (
-	// 	ok      bool
-	// 	summary neo4j.ResultSummary
-	// )
+	var (
+		ok      bool
+		summary neo4j.ResultSummary
+	)
 
-	// if summary, ok = result.(neo4j.ResultSummary); !ok {
-	// 	q.l.Debugf("failed to create summary %v:", result)
-	// }
+	if summary, ok = result.(neo4j.ResultSummary); !ok {
+		q.l.Debugf("failed to create summary %v:", result)
+	}
 
-	// if q.l.Level == logerr.LogLevelDebug {
-	// 	res := map[string]int{
-	// 		"created":   summary.Counters().NodesCreated(),
-	// 		"props set": summary.Counters().PropertiesSet(),
-	// 		"new rels":  summary.Counters().RelationshipsCreated(),
-	// 	}
-	// 	q.l.Debugf("query result %#v:", res)
-	// }
+	if q.l.Level == logerr.LogLevelDebug {
+		res := map[string]int{
+			"created":   summary.Counters().NodesCreated(),
+			"props set": summary.Counters().PropertiesSet(),
+			"new rels":  summary.Counters().RelationshipsCreated(),
+		}
+		q.l.Debugf("query result %#v:", res)
+	}
 
 	return nil
 }
@@ -161,16 +161,15 @@ func (q *Query) String() string {
 }
 
 func (q *Query) txWork(tx neo4j.Transaction) (interface{}, error) {
-	return tx.Run(q.b.String(), nil)
-	// result, err := tx.Run(q.b.String(), nil)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// summary, err := result.Consume()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return summary, nil
+	result, err := tx.Run(q.b.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	summary, err := result.Consume()
+	if err != nil {
+		return nil, err
+	}
+	return summary, nil
 }
 
 func (q *Query) Begin() (neo4j.Transaction, error) {

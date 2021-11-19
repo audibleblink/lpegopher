@@ -7,16 +7,14 @@ import (
 	"sync"
 
 	"github.com/alexflint/go-arg"
-	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/collectors"
 	"github.com/audibleblink/pegopher/logerr"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
-	logerr.Context("doCollectCmd")
-	logerr.Info("collection started")
-	defer logerr.ClearContext()
+	log := logerr.Add("doCollectCmd")
+	log.Info("collection started")
 
 	switch {
 	case args.Collect.All:
@@ -24,14 +22,14 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	case args.Collect.PEs != nil:
 		out, err := setOutputWriter(args.Collect.PEs.File)
 		if err != nil {
-			return logerr.Wrap(err)
+			return log.Wrap(err)
 		}
 
 		collectors.PEs(out, args.Collect.PEs.Path)
 	case args.Collect.Runners != nil:
 		out, err := setOutputWriter(args.Collect.Runners.File)
 		if err != nil {
-			return logerr.Wrap(err)
+			return log.Wrap(err)
 		}
 
 		collectors.Tasks(out)
@@ -82,9 +80,4 @@ func all() {
 	}("runners.json")
 
 	wg.Wait()
-}
-
-func getSystem(pid int) error {
-	err := getsystem.InNewProcess(argv.GetSystem.PID, `c:\windows\system32\cmd.exe`, false)
-	return logerr.Add("getsystem").Wrap(err)
 }

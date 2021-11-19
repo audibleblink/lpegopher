@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -22,11 +21,6 @@ import (
 	"www.velocidex.com/golang/go-pe"
 )
 
-type PEFunction struct {
-	Host      string   `json:"Host"`
-	Functions []string `json:"Functions"`
-}
-
 type DACL struct {
 	Owner string        `json:"Owner"`
 	Group string        `json:"Group"`
@@ -35,15 +29,13 @@ type DACL struct {
 
 // INode contains the parsed import and exports of the INode
 type INode struct {
-	Name     string       `json:"Name"`
-	Path     string       `json:"Path"`
-	Parent   string       `json:"Dir"`
-	Type     string       `json:"Type"`
-	ImpHash  string       `json:"ImpHash"`
-	Exports  []string     `json:"Exports"`
-	Imports  []PEFunction `json:"Imports"`
-	Forwards []PEFunction `json:"Forwards"`
-	DACL     DACL         `json:"DACL"`
+	Name     string   `json:"Name"`
+	Path     string   `json:"Path"`
+	Parent   string   `json:"Dir"`
+	Type     string   `json:"Type"`
+	Imports  []string `json:"Imports"`
+	Forwards []string `json:"Forwards"`
+	DACL     DACL     `json:"DACL"`
 }
 
 type ReadableAce struct {
@@ -53,7 +45,6 @@ type ReadableAce struct {
 
 func PEs(writer io.Writer, dir string) {
 	log := logerr.Add("pe collector")
-	g := new(errgroup.Group)
 
 	walkStartPath, _ := filepath.Abs(dir)
 	walkFunction := walkFunctionGenerator(writer)
@@ -63,12 +54,14 @@ func PEs(writer io.Writer, dir string) {
 		log.Fatalf("could not read %s", walkStartPath)
 	}
 
+	g := new(errgroup.Group)
 	for _, obj := range objs {
 		if obj.IsDir() {
-			path := fmt.Sprintf(`%s%s`, walkStartPath, obj.Name())
-			logerr.Debugf("forking collection of %s", path)
+			path := filepath.Join(walkStartPath, obj.Name())
+			log.Debugf("forking collection of %s", path)
 			g.Go(func() error {
 				err := filepath.WalkDir(path, walkFunction)
+				log.Infof("completed collection of %s", path)
 				return err
 			})
 		}
@@ -76,7 +69,6 @@ func PEs(writer io.Writer, dir string) {
 	if err := g.Wait(); err == nil {
 		logerr.Info("All collection jobs complete")
 	}
-
 }
 
 func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
@@ -88,7 +80,7 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 		log := logerr.Add("dirwalk")
 
 		if err != nil {
-			log.Warnf("HUH", err)
+			log.Warnf("recursion, amirite?: %s", err)
 		}
 
 		if info.IsDir() {
@@ -108,6 +100,8 @@ func walkFunctionGenerator(writer io.Writer) fs.WalkDirFunc {
 			}
 
 			report := newPEReport(path)
+			report.Parent = parent
+
 			peFile, err := newPEFile(report.Path)
 			if err != nil {
 				log.Debugf("pe parsing failed: %s", err)
@@ -169,11 +163,8 @@ func newPEFile(path string) (pefile *pe.PEFile, err error) {
 }
 
 func populatePEReport(report *INode, peFile *pe.PEFile) error {
-	report.ImpHash = peFile.ImpHash()
-	report.Imports = genPEFunctions(peFile.Imports())
-	report.Forwards = genPEFunctions(patchForwards(peFile.Forwards()))
-	report.Exports = patchExports(peFile.Exports())
-	report.Parent = filepath.Dir(report.Path)
+	report.Imports = peFile.Imports()
+	report.Forwards = peFile.Forwards()
 
 	dacl, err := pullDACL(report.Path)
 	if err != nil {
@@ -256,40 +247,6 @@ func handleDirPerms(report *INode) error {
 	}
 	report.DACL = dacl
 	return nil
-}
-
-func patchExports(funcs []string) (out []string) {
-	for _, fun := range funcs {
-		// strip leading ':'
-		out = append(out, fun[1:])
-	}
-	return
-}
-
-func patchForwards(funcs []string) (out []string) {
-	for _, fun := range funcs {
-		// dbgcore.MiniDumpWriteDump....
-		matcher := regexp.MustCompile(`\.`)
-		s := matcher.ReplaceAllString(fun, ".dll!")
-		out = append(out, s)
-	}
-	return
-}
-func genPEFunctions(list []string) []PEFunction {
-	// incoming: ["dllname!funcName"]
-	funcs := []PEFunction{}
-	accumulatedFns := make(map[string][]string)
-	for _, fn := range list {
-		splitFn := strings.Split(fn, "!")
-		peName := splitFn[0]
-		funcName := splitFn[1]
-		accumulatedFns[peName] = append(accumulatedFns[peName], funcName)
-	}
-
-	for peName, funcSlice := range accumulatedFns {
-		funcs = append(funcs, PEFunction{peName, funcSlice})
-	}
-	return funcs
 }
 
 func jsPrint(writer io.Writer, report *INode) {
