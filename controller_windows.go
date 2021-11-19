@@ -7,9 +7,11 @@ import (
 	"sync"
 
 	"github.com/alexflint/go-arg"
+	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/collectors"
 	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/rpcls/pkg/procs"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
@@ -94,5 +96,5 @@ func getSystem() error {
 		pid = procs.PidForName("winlogon.exe")
 		logerr.Infof("stealing winlogon token from pid %d", pid)
 	}
-	err := getsystem.InNewProcess(pid, `c:\windows\system32\cmd.exe`, false)
+	return getsystem.InNewProcess(pid, `c:\windows\system32\cmd.exe`, false)
 }
