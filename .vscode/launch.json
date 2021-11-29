@@ -13,7 +13,6 @@
             "program": "${workspaceFolder}",
             "args": [
                 "collect",
-                "pes",
                 "--path",
                 "C:/Program Files",
                 "-v",

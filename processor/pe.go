@@ -16,29 +16,25 @@ func InsertAllNodes() (err error) {
 		CREATE (:Exe:INode {
 			nid: line[0], 
 			name: line[1],
-			type: line[2],
-			path: line[3],
-			exe: line[4],
-			parent: line[5],
-			context: line[6],
-			runlevel: line[7]})`
+			path: line[2],
+			parent: line[3],
+			owner: line[4],
+			group: line[5] })`
 	err = execString(query)
 	if err != nil {
 		err = log.Wrap(err)
 		return
 	}
-	log.Info("processing exes")
+	log.Info("processing dlls")
 	query = ` LOAD CSV FROM'file:////dlls.csv' AS line
 		WITH line
 		CREATE (:Dll:INode {
 			nid: line[0], 
 			name: line[1],
-			type: line[2],
-			path: line[3],
-			exe: line[4],
-			parent: line[5],
-			context: line[6],
-			runlevel: line[7]})`
+			path: line[2],
+			parent: line[3],
+			owner: line[4],
+			group: line[5] })`
 	err = execString(query)
 	if err != nil {
 		err = log.Wrap(err)
@@ -51,20 +47,18 @@ func InsertAllNodes() (err error) {
 		CREATE (:Directory:INode {
 			nid: line[0], 
 			name: line[1],
-			type: line[2],
-			path: line[3],
-			exe: line[4],
-			parent: line[5],
-			context: line[6],
-			runlevel: line[7]})`
+			path: line[2],
+			parent: line[3],
+			owner: line[4],
+			group: line[5] })`
 	err = execString(query)
 	if err != nil {
 		err = log.Wrap(err)
 		return
 	}
 
-	log.Info("processing dependencies")
-	query = ` 
+	log.Info("processing forwards")
+	query = `
 	LOAD CSV FROM'file:////deps.csv' AS line
 		WITH line CREATE (:Dep {nid: line[0], name: line[1]})`
 	err = execString(query)
@@ -100,6 +94,41 @@ func BulkRelateFileTree() (err error) {
 			err = log.Wrap(err)
 			return
 		}
+	}
+	return
+}
+
+func RelateOwnership() (err error) {
+	log := logerr.Add("ownership creation")
+	log.Info("relating all (:Principal)-[:OWNS]-(:INode)")
+	err = execString(`
+			CALL apoc.periodic.iterate("
+				MATCH (pcpl:Principal),(inode:INode) WHERE pcpl.nid = inode.owner or pcpl.nid = inode.group RETURN pcpl, inode
+			","
+				MERGE (pcpl)-[:OWNS]->(inode)
+			", {batchSize:1000})
+			`)
+	if err != nil {
+		err = log.Wrap(err)
+		return
+	}
+	return
+}
+
+func RelateACLs() (err error) {
+	log := logerr.Add("acl relationships")
+	log.Info("relating all (:Principal)-[$ACE]-(:INodes)")
+	err = execString(`
+		CALL apoc.periodic.iterate("
+			CALL apoc.load.csv('relationships.csv',{}) yield list as line return line
+		","
+			MATCH (a {id: line[0]}), (b {id: line[2]})
+			CALL apoc.create.relationship(a, line[1], {}, b) YIELD rel RETURN *
+		", {batchSize:1000, iterateList:true, parallel:true});
+		`)
+	if err != nil {
+		err = log.Wrap(err)
+		return
 	}
 	return
 }

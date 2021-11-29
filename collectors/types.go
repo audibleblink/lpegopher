@@ -1,8 +1,8 @@
 package collectors
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/audibleblink/pegopher/util"
@@ -24,6 +24,8 @@ const (
 	Imports    = "IMPORTS"
 	Forwards   = "FORWARS"
 	ImportedBy = "IMPORTED_BY"
+
+	Null = "NULL"
 )
 
 // INode contains the parsed import and exports of the INode
@@ -32,7 +34,6 @@ type INode struct {
 	Path     string `json:"Path"`
 	Parent   string `json:"Dir"`
 	Type     string `json:"Type"`
-	Imports  []*Dep `json:"Imports"`
 	Forwards []*Dep `json:"Forwards"`
 	DACL     DACL   `json:"DACL"`
 }
@@ -41,19 +42,19 @@ func (i INode) ID() string {
 	return hashFor(i.Path)
 }
 
-func (i INode) Write(file *bufio.Writer) string {
+func (i INode) Write(file io.Writer) string {
 	id := i.ID()
 	csv := i.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, csv)
 	if !cacheHit {
-		file.WriteString(csv)
+		io.WriteString(file, csv)
 	}
 	return id
 }
 
 func (i INode) ToCSV() string {
-	o := "NULL"
-	g := "NULL"
+	o := Null
+	g := Null
 	if i.DACL.Group != nil {
 		g = i.DACL.Group.Name
 	}
@@ -99,11 +100,11 @@ func (p Principal) ToCSV() string {
 	row := fmt.Sprintf("%s\n", strings.Join(fields, ","))
 	return row
 }
-func (p Principal) Write(file *bufio.Writer) string {
+func (p Principal) Write(file io.Writer) string {
 	id, csv := p.ID(), p.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, csv)
 	if !cacheHit {
-		file.WriteString(csv)
+		io.WriteString(file, csv)
 	}
 	return id
 }
@@ -122,11 +123,11 @@ func (r Rel) ID() string {
 	return hashFor(r.ToCSV())
 }
 
-func (r Rel) Write(file *bufio.Writer) string {
+func (r Rel) Write(file io.Writer) string {
 	id, csv := r.ID(), r.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, csv)
 	if !cacheHit {
-		file.WriteString(csv)
+		io.WriteString(file, csv)
 	}
 	return id
 }
@@ -139,11 +140,12 @@ func (i Dep) ID() string {
 	return hashFor(i.Name)
 }
 
-func (i Dep) Write(file *bufio.Writer) string {
+func (i Dep) Write(file io.Writer) string {
 	id, name := i.ID(), i.Name
 	_, cacheHit := cache.LoadOrStore(id, name)
+	name = fmt.Sprintln(name)
 	if !cacheHit {
-		file.WriteString(name)
+		io.WriteString(file, name)
 	}
 	return id
 }
@@ -169,17 +171,17 @@ func (r PERunner) ToCSV() string {
 	fields[3] = util.PathFix(r.Exe.Path)   // full path to executed exe
 	fields[4] = util.PathFix(r.Exe.Name)   // exe name
 	fields[5] = util.PathFix(r.Exe.Parent) // exe parent dir
-	fields[6] = r.Context.Name             // executin Principal
+	fields[6] = util.Lower(r.Context.Name) // executin Principal
 	fields[7] = r.RunLevel                 // runlevel
 	row := fmt.Sprintf("%s\n", strings.Join(fields, ","))
 	return row
 }
 
-func (r PERunner) Write(file *bufio.Writer) string {
+func (r PERunner) Write(file io.Writer) string {
 	id, csv := r.ID(), r.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, csv)
 	if !cacheHit {
-		file.WriteString(csv)
+		io.WriteString(file, csv)
 	}
 	return id
 }

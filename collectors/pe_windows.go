@@ -1,17 +1,15 @@
 package collectors
 
 import (
-	"bufio"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/Microsoft/go-winio"
+	"github.com/audibleblink/concurrent-writer"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/node"
 	"github.com/audibleblink/pegopher/util"
@@ -42,72 +40,67 @@ var (
 
 	key, _ = hex.DecodeString("900F02030405060708090A0B9C0D0E0FF0E0D0C0B0A090807060504030201091")
 	cache  = &sync.Map{}
-	DoJSON = false
 )
 
-var writers = map[string]*bufio.Writer{
-	ExeFile:       bufio.NewWriter(f0),
-	DllFile:       bufio.NewWriter(f1),
-	DirFile:       bufio.NewWriter(f2),
-	PrincipalFile: bufio.NewWriter(f3),
-	RelsFile:      bufio.NewWriter(f4),
-	DepsFile:      bufio.NewWriter(f5),
-	RunnersFile:   bufio.NewWriter(f6),
+var writers = map[string]*concurrent.Writer{
+	ExeFile:       concurrent.NewWriter(f0),
+	DllFile:       concurrent.NewWriter(f1),
+	DirFile:       concurrent.NewWriter(f2),
+	PrincipalFile: concurrent.NewWriter(f3),
+	RelsFile:      concurrent.NewWriter(f4),
+	DepsFile:      concurrent.NewWriter(f5),
+	RunnersFile:   concurrent.NewWriter(f6),
 }
 
-func PEs(writer *bufio.Writer, dir string) {
+func PEs(dir string) {
 	log := logerr.Add("pe collector")
 	walkStartPath, _ := filepath.Abs(dir)
-	walkFunction := walkFunctionGenerator(writer)
 	filepath.WalkDir(walkStartPath, walkFunction)
 	log.Infof("completed collection of %s", walkStartPath)
 }
 
-func walkFunctionGenerator(writer *bufio.Writer) fs.WalkDirFunc {
+func walkFunction(path string, info os.DirEntry, err error) error {
+	log := logerr.Add("dirwalk")
 
-	return func(path string, info os.DirEntry, err error) error {
-		log := logerr.Add("dirwalk")
+	if err != nil {
+		log.Warnf("recursion, amirite?: %s", err)
+	}
 
-		if err != nil {
-			log.Warnf("recursion, amirite?: %s", err)
+	if info.IsDir() {
+		return nil
+	}
+
+	path = util.Lower(path)
+	isExe, _ := filepath.Match("*.exe", filepath.Base(path))
+	isDll, _ := filepath.Match("*.dll", filepath.Base(path))
+
+	if isExe || isDll {
+		parent := filepath.Dir(path)
+		_, alreadyDidIt := cache.LoadOrStore(parent, true)
+		if !alreadyDidIt {
+			dirReport := newDirectoryReport(parent)
+			doPrint(dirReport)
 		}
 
-		if info.IsDir() {
+		report := newPEReport(path)
+		report.Parent = parent
+
+		peFile, err := newPEFile(report.Path)
+		if err != nil {
+			log.Debugf("pe parsing failed: %s", err)
 			return nil
 		}
 
-		path = util.Lower(path)
-		isExe, _ := filepath.Match("*.exe", filepath.Base(path))
-		isDll, _ := filepath.Match("*.dll", filepath.Base(path))
-
-		if isExe || isDll {
-			parent := filepath.Dir(path)
-			_, alreadyDidIt := cache.LoadOrStore(parent, true)
-			if !alreadyDidIt {
-				dirReport := newDirectoryReport(parent)
-				doPrint(writer, dirReport)
-			}
-
-			report := newPEReport(path)
-			report.Parent = parent
-
-			peFile, err := newPEFile(report.Path)
-			if err != nil {
-				log.Debugf("pe parsing failed: %s", err)
-				return nil
-			}
-
-			err = populatePEReport(report, peFile)
-			if err != nil {
-				log.Warnf("could not generate report for %s: %s", path, err)
-				return nil
-			}
-
-			doPrint(writer, report)
-
+		err = populatePEReport(report, peFile)
+		if err != nil {
+			log.Warnf("could not generate report for %s: %s", path, err)
+			return nil
 		}
-		return nil
+
+		doPrint(report)
+
 	}
+	return nil
 }
 
 func newDirectoryReport(path string) *INode {
@@ -152,20 +145,6 @@ func newPEFile(path string) (pefile *pe.PEFile, err error) {
 }
 
 func populatePEReport(report *INode, peFile *pe.PEFile) error {
-
-	tracked := make(map[string]bool)
-	impHosts := make([]*Dep, 0)
-	for _, imp := range peFile.Imports() {
-		host := strings.Split(imp, "!")
-		cacheHit := tracked[host[0]]
-		if cacheHit {
-			continue
-		}
-		tracked[host[0]] = true
-		dep := &Dep{Name: host[0]}
-		impHosts = append(impHosts, dep)
-	}
-	report.Imports = impHosts
 
 	forwards := make([]*Dep, 0)
 	for _, fwd := range peFile.Forwards() {
@@ -258,13 +237,7 @@ func handleDirPerms(report *INode) error {
 	return nil
 }
 
-func doPrint(writer *bufio.Writer, report *INode) {
-
-	if DoJSON {
-		serialized, _ := json.Marshal(report)
-		fmt.Fprintln(writer, string(serialized))
-		return
-	}
+func doPrint(report *INode) {
 
 	var nodeID string
 	switch report.Type {
@@ -288,24 +261,6 @@ func doPrint(writer *bufio.Writer, report *INode) {
 				rel.Write(writers[RelsFile])
 			}
 		}
-	}
-
-	for _, imp := range report.Imports {
-		impID := imp.Write(writers[DepsFile])
-
-		rel := &Rel{
-			Start: nodeID,
-			Rel:   Imports,
-			End:   impID,
-		}
-		rel.Write(writers[RelsFile])
-
-		rel = &Rel{
-			Start: impID,
-			Rel:   ImportedBy,
-			End:   nodeID,
-		}
-		rel.Write(writers[RelsFile])
 	}
 
 	for _, fwd := range report.Forwards {

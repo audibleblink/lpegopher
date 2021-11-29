@@ -46,21 +46,8 @@ func main() {
 		}
 	case argv.PostProcess != nil:
 		dbInit()
-		p := argv.PostProcess
-		if p.All != nil {
-			dbDrop(p.All.Drop)
-		} else if p.Runners != nil {
-			dbDrop(p.Runners.Drop)
-		} else if p.PEs != nil {
-			dbDrop(p.PEs.Drop)
-		} else if p.Relationships != nil {
-			dbDrop(p.Relationships.Drop)
-		} else {
-			cli.WriteHelp(os.Stderr)
-			logerr.Fatal("you must choose a post-processing task")
-		}
+		dbDrop(argv.PostProcess.Drop)
 
-		// dbDrop(true)
 		err := doProcessCmd(argv, cli)
 		if err != nil {
 			logerr.Fatalf("processing failed: %v", err)
@@ -84,35 +71,43 @@ func dbInit() {
 		log.Fatal(err.Error())
 	}
 
-	// cypherQ, err := cypher.NewQuery()
-	// if err != nil {
-	// 	log.Fatal(err.Error())
-	// }
-	//
-	// tx, err := cypherQ.Begin()
-	// if err != nil {
-	// 	log.Fatal(err.Error())
-	// }
-	// defer tx.Rollback()
+	cypherQ, err := cypher.NewQuery()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
-	// tx.Run("CREATE CONSTRAINT ON (a:Exe) ASSERT a.path IS UNIQUE;", nil)
-	// tx.Run("CREATE CONSTRAINT ON (a:Dll) ASSERT a.path IS UNIQUE;", nil)
-	// tx.Run("CREATE CONSTRAINT ON (a:Directory) ASSERT a.path IS UNIQUE;", nil)
-	// tx.Run("CREATE CONSTRAINT ON (a:Principal) ASSERT a.name IS UNIQUE;", nil)
-	// tx.Run("CREATE CONSTRAINT ON (a:Runner) ASSERT a.name IS UNIQUE;", nil)
-	// tx.Run("CREATE CONSTRAINT ON (a:Dep) ASSERT a.name IS UNIQUE;", nil)
-	//
-	// err = tx.Commit()
-	// if err != nil {
-	// 	switch e := err.(type) {
-	// 	case *neo4j.Neo4jError:
-	// 		if e.Code == "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists" {
-	// 			log.Debug("node constraints already  in place, skipping")
-	// 		}
-	// 	default:
-	// 		log.Errorf("tx commit failed %s", err)
-	// 	}
-	// }
+	tx, err := cypherQ.Begin()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer tx.Rollback()
+
+	iq := "CREATE BTREE INDEX IF NOT EXISTS FOR (n:%s) ON (n.%s)"
+	tx.Run(fmt.Sprintf(iq, "Exe", "nid"), nil)
+	tx.Run(fmt.Sprintf(iq, "Exe", "path"), nil)
+	tx.Run(fmt.Sprintf(iq, "Dll", "nid"), nil)
+	tx.Run(fmt.Sprintf(iq, "Dll", "path"), nil)
+	tx.Run(fmt.Sprintf(iq, "Directory", "nid"), nil)
+	tx.Run(fmt.Sprintf(iq, "Directory", "path"), nil)
+
+	tx.Run(fmt.Sprintf(iq, "Principal", "nid"), nil)
+	tx.Run(fmt.Sprintf(iq, "Principal", "name"), nil)
+	tx.Run(fmt.Sprintf(iq, "Runner", "nid"), nil)
+	tx.Run(fmt.Sprintf(iq, "Runner", "name"), nil)
+	tx.Run(fmt.Sprintf(iq, "Dep", "nid"), nil)
+	tx.Run(fmt.Sprintf(iq, "Dep", "name"), nil)
+
+	err = tx.Commit()
+	if err != nil {
+		switch e := err.(type) {
+		case *neo4j.Neo4jError:
+			if e.Code == "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists" {
+				log.Debug("node constraints already  in place, skipping")
+			}
+		default:
+			log.Errorf("tx commit failed %s", err)
+		}
+	}
 
 }
 
@@ -121,12 +116,15 @@ func dbDrop(doIt bool) {
 		logerr.Info("dropping database")
 		cypherQ, err := cypher.NewQuery()
 		if err != nil {
-			logerr.Fatalf("drop failed: %s", err.Error())
+			logerr.Fatalf("couldn't create neo4j session: %s", err.Error())
 		}
-		cypherQ.Append(`
+		err = cypherQ.Append(`
 			CALL apoc.periodic.iterate(
 			'MATCH (n) RETURN n', 'DETACH DELETE n'
 			, {batchSize:1000})
 		`).ExecuteW()
+		if err != nil {
+			logerr.Fatalf("drop failed: %s", err.Error())
+		}
 	}
 }

@@ -20,7 +20,7 @@ func InsertAllRunners() (err error) {
 	LOAD CSV FROM'file:////runners.csv' AS line
 	WITH line
 	CREATE (e:Runner {
-		id: line[0], 
+		nid: line[0], 
 		name: line[1],
 		type: line[2],
 		path: line[3],

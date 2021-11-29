@@ -28,12 +28,20 @@ func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 		return
 	}
 
+	log.Info("creating ownership relationships")
+	err = processor.RelateOwnership()
+	if err != nil {
+		return
+	}
+
 	log.Info("creating runner relationships")
 	err = processor.BulkRelateRunners()
 	if err != nil {
 		return
 	}
 
+	log.Info("creating ACL relationships")
+	err = processor.RelateACLs()
 	return
 
 }

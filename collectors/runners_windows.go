@@ -2,7 +2,6 @@ package collectors
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -16,7 +15,7 @@ import (
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
-func Tasks(writer io.Writer) {
+func Tasks() {
 	log := logerr.Add("tasks")
 
 	svc, err := taskmaster.Connect()
@@ -65,12 +64,6 @@ func Tasks(writer io.Writer) {
 				RunLevel: task.Definition.Principal.RunLevel.String(),
 			}
 
-			if DoJSON {
-				jason, _ := json.Marshal(taschzk)
-				fmt.Fprintln(writer, string(jason))
-				return
-			}
-
 			taschzk.Exe.Write(writers[ExeFile])
 			taschzk.Context.Write(writers[PrincipalFile])
 			taschzk.Write(writers[RunnersFile])
@@ -78,7 +71,7 @@ func Tasks(writer io.Writer) {
 	}
 }
 
-func Services(writer io.Writer) {
+func Services() {
 	log := logerr.Add("services")
 	defer logerr.ClearContext()
 
@@ -121,12 +114,6 @@ func Services(writer io.Writer) {
 			Args:    args,
 			Exe:     exe,
 			Context: context,
-		}
-
-		if DoJSON {
-			jason, _ := json.Marshal(service)
-			fmt.Fprintln(writer, string(jason))
-			return
 		}
 
 		service.Exe.Write(writers[ExeFile])
