@@ -27,8 +27,8 @@ type Query struct {
 }
 
 func InitDriver(host, user, passwd string) (err error) {
-	log := logerr.DefaultLogger()
-	log.Context("neo4j driver init")
+	log := logerr.G
+	log.SetContext("neo4j driver init")
 
 	Driver, err = neo4j.NewDriver(
 		host,
@@ -44,7 +44,7 @@ func InitDriver(host, user, passwd string) (err error) {
 }
 
 func NewQuery() (*Query, error) {
-	log := logerr.DefaultLogger().Add("neo4j query")
+	log := logerr.Add("neo4j query")
 
 	if Driver == nil {
 		return &Query{}, log.Wrap(fmt.Errorf("uninitiailized driver"))

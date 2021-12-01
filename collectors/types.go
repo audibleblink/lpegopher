@@ -36,16 +36,22 @@ type INode struct {
 	Type     string `json:"Type"`
 	Forwards []*Dep `json:"Forwards"`
 	DACL     DACL   `json:"DACL"`
+
+	id string
 }
 
 func (i INode) ID() string {
-	return hashFor(i.Path)
+	if i.id != "" {
+		return i.id
+	}
+	i.id = hashFor(i.Path)
+	return i.id
 }
 
 func (i INode) Write(file io.Writer) string {
 	id := i.ID()
 	csv := i.ToCSV()
-	_, cacheHit := cache.LoadOrStore(id, csv)
+	_, cacheHit := cache.LoadOrStore(id, i.Path)
 	if !cacheHit {
 		io.WriteString(file, csv)
 	}
@@ -87,10 +93,15 @@ type ReadableAce struct {
 // Principal represents Users or Groups
 type Principal struct {
 	Name string `json:"Name"`
+	id   string
 }
 
 func (p Principal) ID() string {
-	return hashFor(p.Name)
+	if p.id != "" {
+		return p.id
+	}
+	p.id = hashFor(p.Name)
+	return p.id
 }
 
 func (p Principal) ToCSV() string {
@@ -100,9 +111,10 @@ func (p Principal) ToCSV() string {
 	row := fmt.Sprintf("%s\n", strings.Join(fields, ","))
 	return row
 }
+
 func (p Principal) Write(file io.Writer) string {
 	id, csv := p.ID(), p.ToCSV()
-	_, cacheHit := cache.LoadOrStore(id, csv)
+	_, cacheHit := cache.LoadOrStore(id, p.Name)
 	if !cacheHit {
 		io.WriteString(file, csv)
 	}
@@ -113,6 +125,8 @@ type Rel struct {
 	Start string
 	Rel   string
 	End   string
+
+	id string
 }
 
 func (r Rel) ToCSV() string {
@@ -120,7 +134,11 @@ func (r Rel) ToCSV() string {
 }
 
 func (r Rel) ID() string {
-	return hashFor(r.ToCSV())
+	if r.id != "" {
+		return r.id
+	}
+	r.id = hashFor(r.ToCSV())
+	return r.id
 }
 
 func (r Rel) Write(file io.Writer) string {
@@ -134,18 +152,26 @@ func (r Rel) Write(file io.Writer) string {
 
 type Dep struct {
 	Name string `json:"Name"`
+	id   string
 }
 
-func (i Dep) ID() string {
-	return hashFor(i.Name)
+func (d Dep) ID() string {
+	if d.id != "" {
+		return d.id
+	}
+	d.id = hashFor(d.Name)
+	return d.id
+}
+
+func (d Dep) ToCSV() string {
+	return fmt.Sprintf("%s,%s\n", d.ID(), d.Name)
 }
 
 func (i Dep) Write(file io.Writer) string {
-	id, name := i.ID(), i.Name
-	_, cacheHit := cache.LoadOrStore(id, name)
-	name = fmt.Sprintln(name)
+	id, csv := i.ID(), i.ToCSV()
+	_, cacheHit := cache.LoadOrStore(id, i.Name)
 	if !cacheHit {
-		io.WriteString(file, name)
+		io.WriteString(file, csv)
 	}
 	return id
 }
@@ -157,10 +183,16 @@ type PERunner struct {
 	Args     string     `json:"Args"`
 	Context  *Principal `json:"Context"` // Principal.Name
 	RunLevel string     `json:"RunLevel"`
+
+	id string
 }
 
 func (r PERunner) ID() string {
-	return hashFor(r.Name)
+	if r.id != "" {
+		return r.id
+	}
+	r.id = hashFor(r.Name)
+	return r.id
 }
 
 func (r PERunner) ToCSV() string {
@@ -179,7 +211,7 @@ func (r PERunner) ToCSV() string {
 
 func (r PERunner) Write(file io.Writer) string {
 	id, csv := r.ID(), r.ToCSV()
-	_, cacheHit := cache.LoadOrStore(id, csv)
+	_, cacheHit := cache.LoadOrStore(id, r.Name)
 	if !cacheHit {
 		io.WriteString(file, csv)
 	}

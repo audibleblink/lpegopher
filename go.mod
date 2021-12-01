@@ -23,10 +23,16 @@ require (
 	github.com/alexflint/go-scalar v1.0.0 // indirect
 	github.com/audibleblink/bamflags v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/fatih/color v1.13.0
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/rickb777/date v1.14.2 // indirect
 	github.com/rickb777/plural v1.2.2 // indirect
 	golang.org/x/text v0.3.6 // indirect
+)
+
+require (
+	github.com/mattn/go-colorable v0.1.9 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
 )
 
 replace (

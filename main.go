@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/alexflint/go-arg"
@@ -18,15 +19,16 @@ var (
 
 func init() {
 	l := &logerr.Logger{
-		Level:  logerr.LogLevelInfo,
-		Output: os.Stderr,
+		Level:   logerr.LogLevelInfo,
+		Output:  os.Stderr,
+		NoColor: argv.NoColor,
 	}
 
 	if argv.Debug {
 		l.Level = logerr.LogLevelDebug
 	}
 
-	l.Context("lpegopher").SetAsGlobal()
+	l.SetContext("lpegopher").SetAsGlobal()
 }
 
 func main() {
@@ -44,14 +46,25 @@ func main() {
 		if err != nil {
 			logerr.Fatalf("collection failed: %v", err)
 		}
+
 	case argv.PostProcess != nil:
 		dbInit()
-		dbDrop(argv.PostProcess.Drop)
+		if argv.PostProcess.Drop {
+			err := dbDrop()
+			if err != nil {
+				log.Fatalf("db drop failed: %v", err)
+			}
+		}
+		err := dbCreateIndices()
+		if err != nil {
+			log.Fatalf("index creation failed: %v", err)
+		}
 
-		err := doProcessCmd(argv, cli)
+		err = doProcessCmd(argv, cli)
 		if err != nil {
 			logerr.Fatalf("processing failed: %v", err)
 		}
+
 	default:
 		cli.WriteHelp(os.Stderr)
 		os.Exit(1)
@@ -70,7 +83,10 @@ func dbInit() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+}
 
+func dbCreateIndices() error {
+	log := logerr.Add("db indices")
 	cypherQ, err := cypher.NewQuery()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -82,7 +98,7 @@ func dbInit() {
 	}
 	defer tx.Rollback()
 
-	iq := "CREATE BTREE INDEX IF NOT EXISTS FOR (n:%s) ON (n.%s)"
+	iq := "CREATE CONSTRAINT ON (a:%s) ASSERT a.%s IS UNIQUE;"
 	tx.Run(fmt.Sprintf(iq, "Exe", "nid"), nil)
 	tx.Run(fmt.Sprintf(iq, "Exe", "path"), nil)
 	tx.Run(fmt.Sprintf(iq, "Dll", "nid"), nil)
@@ -103,28 +119,39 @@ func dbInit() {
 		case *neo4j.Neo4jError:
 			if e.Code == "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists" {
 				log.Debug("node constraints already  in place, skipping")
+				return nil
 			}
 		default:
 			log.Errorf("tx commit failed %s", err)
+			return err
 		}
 	}
-
+	return nil
 }
 
-func dbDrop(doIt bool) {
-	if doIt {
-		logerr.Info("dropping database")
-		cypherQ, err := cypher.NewQuery()
-		if err != nil {
-			logerr.Fatalf("couldn't create neo4j session: %s", err.Error())
-		}
-		err = cypherQ.Append(`
+func dbDrop() error {
+	log := logerr.Add("db drop")
+	cypherQ, err := cypher.NewQuery()
+	if err != nil {
+		return log.Add("session creation failed").Wrap(err)
+	}
+	err = cypherQ.Append(`
 			CALL apoc.periodic.iterate(
 			'MATCH (n) RETURN n', 'DETACH DELETE n'
-			, {batchSize:1000})
+			, {batchSize:10000})
 		`).ExecuteW()
-		if err != nil {
-			logerr.Fatalf("drop failed: %s", err.Error())
-		}
+	if err != nil {
+		return log.Add("couldn't drop database").Wrap(err)
 	}
+
+	log.Info("dropping schema")
+	cypherQ, _ = cypher.NewQuery()
+	err = cypherQ.Append(`
+			CALL apoc.schema.assert({},{},true) YIELD label, key RETURN *;
+		`).ExecuteW()
+	if err != nil {
+		return log.Add("couldn't reset schema").Wrap(err)
+	}
+	log.Info("database dropped")
+	return nil
 }

@@ -5,6 +5,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
+
+	"github.com/fatih/color"
 )
 
 type LogLevel int
@@ -23,6 +26,14 @@ var labels map[LogLevel]string = map[LogLevel]string{
 	LogLevelWarn:  "WARN",
 	LogLevelError: "ERROR",
 	LogLevelFatal: "FATAL",
+}
+
+var labelColors map[LogLevel]*color.Color = map[LogLevel]*color.Color{
+	LogLevelDebug: color.New(color.FgCyan),
+	LogLevelInfo:  color.New(color.FgGreen),
+	LogLevelWarn:  color.New(color.FgYellow),
+	LogLevelError: color.New(color.FgRed),
+	LogLevelFatal: color.New(color.BgRed),
 }
 
 // Logger is logger
@@ -44,8 +55,10 @@ type Logger struct {
 	LogWrappedErrors bool
 
 	// Additional prefix text to add context to log messages
-	context  string
-	template string
+	context []string
+
+	// Enable colored status printing
+	NoColor bool
 }
 
 var G = DefaultLogger()
@@ -65,128 +78,138 @@ func Errorf(s string, vals ...interface{}) { G.Errorf(s, vals) }
 func Fatal(s string)                       { G.Fatal(s) }
 func Fatalf(s string, vals ...interface{}) { G.Fatalf(s, vals) }
 
-func Wrap(err error) error { return G.Wrap(err) }
-
-func Context(context string)    { G.Context(context) }
+func Context() string           { return G.Context() }
+func SetContext(context string) { G.SetContext(context) }
 func ClearContext()             { G.ClearContext() }
 func Add(context string) Logger { return G.Add(context) }
+func Wrap(err error) error      { return G.Wrap(err) }
+func EnableColors()             { G.EnableColors() }
 
 func DefaultLogger() *Logger {
 	logger := &Logger{
-		Level:  LogLevelError,
-		Output: os.Stderr,
+		Level:   LogLevelError,
+		Output:  os.Stderr,
+		NoColor: true,
 	}
-	return logger.Context("")
+	color.NoColor = logger.NoColor
+	return logger.SetContext("")
 }
 
-func (d Logger) SetAsGlobal() {
-	G = &d
+func (l Logger) SetAsGlobal() {
+	G = &l
 }
 
-func (d Logger) ClearContext() {
-	d.context = ""
+func (l Logger) Context() string {
+	ctx := strings.Join(l.context, " | ")
+	return ctx
+}
+
+func (l *Logger) ClearContext() {
+	l.context = make([]string, 0)
+}
+
+func (l Logger) SetContext(s string) *Logger {
+	l.context = []string{s}
+	return &l
 }
 
 // Add returns a copy of d with additional context. Useful for loggers
-// the can die once a function returns
-func (d *Logger) Add(context string) Logger {
-	dup := *d
-	dup.context = fmt.Sprintf("%s: %s: ", d.context, context)
+// that can die once the scope in which they're defined exits
+func (l *Logger) Add(context string) Logger {
+	dup := *l
+	dup.context = append(dup.context, context)
 	return dup
 }
 
-func (d Logger) Context(s string) *Logger {
-	d.context = fmt.Sprintf("%s: ", s)
-	d.template = "%-8s%s"
-	if d.context != "" {
-		d.template = fmt.Sprintf("%%-8s%s: %%s", d.context)
-		d.ClearContext()
-	}
-	return &d
+func (l *Logger) EnableColors() *Logger {
+	l.NoColor = false
+	return l
 }
 
-func (d Logger) Debug(s string) {
-	loggerGen(LogLevelDebug, &d)(s)
+func (l *Logger) DisableColors() *Logger {
+	l.NoColor = true
+	return l
 }
 
-func (d Logger) Debugf(s string, vals ...interface{}) {
-	loggerGenF(LogLevelDebug, &d)(s, vals...)
+func (l Logger) Debug(s string) {
+	loggerGen(LogLevelDebug, &l)(s)
 }
 
-func (d Logger) Info(s string) {
-	loggerGen(LogLevelInfo, &d)(s)
+func (l Logger) Debugf(s string, vals ...interface{}) {
+	loggerGenF(LogLevelDebug, &l)(s, vals...)
 }
 
-func (d Logger) Infof(s string, vals ...interface{}) {
-	loggerGenF(LogLevelInfo, &d)(s, vals...)
+func (l Logger) Info(s string) {
+	loggerGen(LogLevelInfo, &l)(s)
 }
 
-func (d Logger) Warn(s string) {
-	loggerGen(LogLevelWarn, &d)(s)
+func (l Logger) Infof(s string, vals ...interface{}) {
+	loggerGenF(LogLevelInfo, &l)(s, vals...)
 }
 
-func (d Logger) Warnf(s string, vals ...interface{}) {
-	loggerGenF(LogLevelWarn, &d)(s, vals...)
+func (l Logger) Warn(s string) {
+	loggerGen(LogLevelWarn, &l)(s)
 }
 
-func (d Logger) Error(s string) {
-	loggerGen(LogLevelError, &d)(s)
+func (l Logger) Warnf(s string, vals ...interface{}) {
+	loggerGenF(LogLevelWarn, &l)(s, vals...)
 }
 
-func (d Logger) Errorf(s string, vals ...interface{}) {
-	loggerGenF(LogLevelError, &d)(s, vals...)
+func (l Logger) Error(s string) {
+	loggerGen(LogLevelError, &l)(s)
 }
 
-func (d Logger) Fatal(s string) {
-	loggerGen(LogLevelFatal, &d)(s)
+func (l Logger) Errorf(s string, vals ...interface{}) {
+	loggerGenF(LogLevelError, &l)(s, vals...)
+}
+
+func (l Logger) Fatal(s string) {
+	loggerGen(LogLevelFatal, &l)(s)
 	os.Exit(1)
 }
 
-func (d Logger) Fatalf(s string, vals ...interface{}) {
-	loggerGenF(LogLevelFatal, &d)(s, vals...)
+func (l Logger) Fatalf(s string, vals ...interface{}) {
+	loggerGenF(LogLevelFatal, &l)(s, vals...)
 	os.Exit(1)
 }
 
-func (d Logger) Wrap(err error) error {
-	if d.LogWrappedErrors {
-		d.Error(err.Error())
+func (l Logger) Wrap(err error) error {
+	if l.LogWrappedErrors {
+		l.Error(err.Error())
 	}
-	return fmt.Errorf("%s: %w", d.context, err)
+	return fmt.Errorf("%s | %w", l.Context(), err)
 }
 
-// generator that return a configured logger
+// generator that return a configured logger function
 func loggerGen(level LogLevel, l *Logger) func(string) {
-	lvlTag := lvlFormat(level)
-	newTmpl := fmt.Sprint(lvlTag, l.context)
-
+	color.NoColor = l.NoColor
+	newTmpl := fmt.Sprint(label(level), l.Context())
 	return func(s string) {
 		if (l.Level == level && l.Exclusive) || (l.Level <= level && !l.Exclusive) {
-			out := fmt.Sprintf("%s: %s", newTmpl, s)
+			out := fmt.Sprintf("%s | %s", newTmpl, s)
 			log.Print(out)
 		}
 	}
 }
 
-// generator that returns a configured formatting logger
+// generator that returns a configured formatting logger function
 func loggerGenF(level LogLevel, l *Logger) func(string, ...interface{}) {
-	lvlTag := lvlFormat(level)
-	newTmpl := fmt.Sprint(lvlTag, l.context, "%s")
-
+	color.NoColor = l.NoColor
+	newTmpl := fmt.Sprint(label(level), l.Context())
 	return func(fmtString string, vals ...interface{}) {
 		msg := fmt.Sprintf(fmtString, vals...)
 		if (l.Level == level && l.Exclusive) || (l.Level <= level && !l.Exclusive) {
-			fmtMsg := fmt.Sprintf(newTmpl, msg)
+			fmtMsg := fmt.Sprint(newTmpl, " | ", msg)
 			log.Print(fmtMsg)
 		}
 	}
 }
 
-// Left-indent, width=8
-// "[INFO]   "
-// "[ERROR]  "
-func lvlFormat(lvl LogLevel) string {
-	return fmt.Sprintf(
-		"%-8s",
-		fmt.Sprintf("[%s]", labels[lvl]),
-	)
+func label(lvl LogLevel) string {
+	if color.NoColor {
+		return fmt.Sprintf("[%s] ", labels[lvl])
+	}
+
+	labelColor := labelColors[lvl]
+	return labelColor.Sprintf("[%s] ", labels[lvl])
 }

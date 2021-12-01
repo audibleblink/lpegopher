@@ -1,15 +1,12 @@
 package collectors
 
 import (
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/Microsoft/go-winio"
-	"github.com/audibleblink/concurrent-writer"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/node"
 	"github.com/audibleblink/pegopher/util"
@@ -18,39 +15,6 @@ import (
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"
 )
-
-const (
-	ExeFile       = "exes.csv"
-	DllFile       = "dlls.csv"
-	DirFile       = "dirs.csv"
-	PrincipalFile = "principals.csv"
-	RelsFile      = "relationships.csv"
-	DepsFile      = "deps.csv"
-	RunnersFile   = "runners.csv"
-)
-
-var (
-	f0, _ = os.OpenFile(ExeFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	f1, _ = os.OpenFile(DllFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	f2, _ = os.OpenFile(DirFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	f3, _ = os.OpenFile(PrincipalFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	f4, _ = os.OpenFile(RelsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	f5, _ = os.OpenFile(DepsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	f6, _ = os.OpenFile(RunnersFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-	key, _ = hex.DecodeString("900F02030405060708090A0B9C0D0E0FF0E0D0C0B0A090807060504030201091")
-	cache  = &sync.Map{}
-)
-
-var writers = map[string]*concurrent.Writer{
-	ExeFile:       concurrent.NewWriter(f0),
-	DllFile:       concurrent.NewWriter(f1),
-	DirFile:       concurrent.NewWriter(f2),
-	PrincipalFile: concurrent.NewWriter(f3),
-	RelsFile:      concurrent.NewWriter(f4),
-	DepsFile:      concurrent.NewWriter(f5),
-	RunnersFile:   concurrent.NewWriter(f6),
-}
 
 func PEs(dir string) {
 	log := logerr.Add("pe collector")

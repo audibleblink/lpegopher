@@ -90,7 +90,7 @@ func Services() {
 	for _, svcName := range svcNames {
 		svc, err := svcMgr.OpenService(svcName)
 		if err != nil {
-			log.Warnf("failed to open service: %s: %s", svcName, err)
+			log.Warnf("failed to open service %s: %s", svcName, err)
 			continue
 		}
 		conf, err := svc.Config()
@@ -116,6 +116,10 @@ func Services() {
 			Context: context,
 		}
 
+		// if strings.HasSuffix(context.Name, "ystem") {
+		// 	fmt.Print(1)
+		// }
+
 		service.Exe.Write(writers[ExeFile])
 		service.Context.Write(writers[PrincipalFile])
 		service.Write(writers[RunnersFile])
@@ -126,13 +130,13 @@ func hashFor(data string) string {
 	data = util.PathFix(data)
 	hash, err := highwayhash.New(key)
 	if err != nil {
-		fmt.Printf("Failed to create HighwayHash instance: %v", err) // add error handling
+		fmt.Printf("Failed to create HighwayHash instance: %v", err)
 		os.Exit(1)
 	}
 
 	txt := strings.NewReader(data)
 	if _, err = io.Copy(hash, txt); err != nil {
-		fmt.Printf("Failed to read from file: %v", err) // add error handling
+		fmt.Printf("hash reader creation failed: %v", err)
 		os.Exit(1)
 	}
 

@@ -10,7 +10,7 @@ import (
 func InsertAllNodes() (err error) {
 	log := logerr.Add("file inserts")
 
-	log.Info("processing exes")
+	log.Debug("processing exes")
 	query := ` LOAD CSV FROM'file:////exes.csv' AS line
 		WITH line
 		CREATE (:Exe:INode {
@@ -25,7 +25,7 @@ func InsertAllNodes() (err error) {
 		err = log.Wrap(err)
 		return
 	}
-	log.Info("processing dlls")
+	log.Debug("processing dlls")
 	query = ` LOAD CSV FROM'file:////dlls.csv' AS line
 		WITH line
 		CREATE (:Dll:INode {
@@ -41,7 +41,7 @@ func InsertAllNodes() (err error) {
 		return
 	}
 
-	log.Info("processing dirs")
+	log.Debug("processing dirs")
 	query = ` LOAD CSV FROM'file:////dirs.csv' AS line
 		WITH line
 		CREATE (:Directory:INode {
@@ -57,7 +57,7 @@ func InsertAllNodes() (err error) {
 		return
 	}
 
-	log.Info("processing forwards")
+	log.Debug("processing forwards")
 	query = `
 	LOAD CSV FROM'file:////deps.csv' AS line
 		WITH line CREATE (:Dep {nid: line[0], name: line[1]})`
@@ -67,7 +67,7 @@ func InsertAllNodes() (err error) {
 		return
 	}
 
-	log.Info("processing principals")
+	log.Debug("processing principals")
 	query = ` 
 	LOAD CSV FROM'file:////principals.csv' AS line
 		WITH line CREATE (:Principal {nid: line[0], name: line[1]})`
@@ -83,7 +83,7 @@ func InsertAllNodes() (err error) {
 func BulkRelateFileTree() (err error) {
 	log := logerr.Add("filetree relationships")
 	for _, typ := range []string{node.Dir, node.Exe, node.Dll} {
-		log.Infof("relating all (:Dir)-[:CONTAINS]-(:%s)", typ)
+		log.Debugf("relating all (:Dir)-[:CONTAINS]-(:%s)", typ)
 		err = execString(fmt.Sprintf(`
 			CALL apoc.periodic.iterate(
 				"MATCH (node:%s),(dir:Directory) WHERE node.parent = dir.path RETURN node,dir",
@@ -100,7 +100,7 @@ func BulkRelateFileTree() (err error) {
 
 func RelateOwnership() (err error) {
 	log := logerr.Add("ownership creation")
-	log.Info("relating all (:Principal)-[:OWNS]-(:INode)")
+	log.Debug("relating all (:Principal)-[:OWNS]-(:INode)")
 	err = execString(`
 			CALL apoc.periodic.iterate("
 				MATCH (pcpl:Principal),(inode:INode) WHERE pcpl.nid = inode.owner or pcpl.nid = inode.group RETURN pcpl, inode
@@ -117,14 +117,14 @@ func RelateOwnership() (err error) {
 
 func RelateACLs() (err error) {
 	log := logerr.Add("acl relationships")
-	log.Info("relating all (:Principal)-[$ACE]-(:INodes)")
+	log.Debug("relating all (:Principal)-[$ACE]-(:INodes)")
 	err = execString(`
 		CALL apoc.periodic.iterate("
-			CALL apoc.load.csv('relationships.csv',{}) yield list as line return line
+			LOAD CSV FROM 'file:////relationships.csv' AS line RETURN line
 		","
-			MATCH (a {id: line[0]}), (b {id: line[2]})
-			CALL apoc.create.relationship(a, line[1], {}, b) YIELD rel RETURN *
-		", {batchSize:1000, iterateList:true, parallel:true});
+			MATCH (a {nid: line[0]}), (b {nid: line[2]})
+			CALL apoc.create.relationship(a, line[1], {}, b) YIELD rel RETURN rel
+		", {batchSize:1000, iterateList:true});
 		`)
 	if err != nil {
 		err = log.Wrap(err)

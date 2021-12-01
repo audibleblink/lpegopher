@@ -39,7 +39,7 @@ func BulkRelateRunners() (err error) {
 	log := logerr.Add("runner relationships")
 
 	// relate dirs that hosts a runner exe
-	log.Infof("relating all (:Dir)-[:HOSTS_PES_FOR]->(:Runner)")
+	log.Debugf("relating all (:Dir)-[:HOSTS_PES_FOR]->(:Runner)")
 	err = execString(`
 	CALL apoc.periodic.iterate(
 		"MATCH (r:Runner),(dir:Directory) WHERE r.parent = dir.path RETURN r,dir",
@@ -51,19 +51,19 @@ func BulkRelateRunners() (err error) {
 	}
 
 	// relate principals that run certain runners
-	log.Infof("relating all (:Runner)-[:RUNS_AS]->(:Principal)")
+	log.Debugf("relating all (:Runner)-[:RUNS_AS]->(:Principal)")
 	err = execString(`
 	CALL apoc.periodic.iterate(
 		"MATCH (r:Runner),(p:Principal) WHERE r.context = p.name RETURN r,p",
 		"MERGE (r)-[:RUNS_AS]->(p)",
-		{batchSize:1000})
+		{batchSize:100, iterateList: true})
 	`)
 	if err != nil {
 		return log.Wrap(err)
 	}
 
 	// relate exes that are executed by a runner
-	log.Infof("relating all (:Exe)-[:EXECUTED_BY]->(:Runner)")
+	log.Debugf("relating all (:Exe)-[:EXECUTED_BY]->(:Runner)")
 	err = execString(`
 	CALL apoc.periodic.iterate(
 		"MATCH (r:Runner),(exe:Exe) WHERE r.parent+'/'+r.exe = exe.path RETURN r,exe",

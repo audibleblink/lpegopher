@@ -7,7 +7,8 @@ type ArgType struct {
 	Collect     *collectCmd   `arg:"subcommand" help:"Collect Windows PE and Runner data"`
 	PostProcess *processCmd   `arg:"subcommand" help:"Run Post-Processing tasks and populate neo4j"`
 
-	Debug bool `arg:"-v" help:"verbose output" default:"false"`
+	Debug   bool `arg:"-v" help:"verbose output" default:"false"`
+	NoColor bool `arg:"--nocolor" help:"Disable colored output" default:"false"`
 }
 
 type getSystemCmd struct {
