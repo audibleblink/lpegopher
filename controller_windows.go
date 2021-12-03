@@ -27,7 +27,7 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	for _, f := range files {
 		if f.IsDir() {
 			path := filepath.Join(args.Collect.Path, f.Name())
-			log.Infof("forking collection of %s", path)
+			log.Debugf("forking collection of %s", path)
 			wg.Add(1)
 			go func(startPath string) {
 				defer wg.Done()
@@ -55,6 +55,7 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	log.Info("flushing buffers and closing files")
 	collectors.FlashAndClose()
 	log.Info("collection complete")
+	log.Info("don't forget to upload/move *.csv to neo4j's `import` directory before running postprocessing")
 	return
 }
 

@@ -126,7 +126,26 @@ func RelateACLs() (err error) {
 		","
 			MATCH (a:Principal {nid: line[0]}), (b:INode {nid: line[2]})
 			CALL apoc.create.relationship(a, line[1], {}, b) YIELD rel RETURN rel
-		", {batchSize: 5000});
+		", {batchSize: 20000});
+		`)
+	if err != nil {
+		err = log.Wrap(err)
+		return
+	}
+	return
+}
+
+func RelateDependecies() (err error) {
+	log := logerr.Add("dependecy relationships")
+	log.Debug("relating (:INode)-[:IMPORTS]-(:Dep)")
+	err = execString(`
+		CALL apoc.periodic.iterate("
+			LOAD CSV FROM 'file:////imports.csv' AS line RETURN line
+		","
+			MATCH (a:INode {nid: line[0]}), (b:Dep {nid: line[2]})
+			MERGE (a)-[:IMPORTS]->(b)
+			MERGE (b)-[:IMPORTED_BY]->(a)
+		", {batchSize: 20000});
 		`)
 	if err != nil {
 		err = log.Wrap(err)

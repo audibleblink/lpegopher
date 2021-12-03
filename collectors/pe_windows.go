@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/Microsoft/go-winio"
@@ -111,13 +112,13 @@ func newPEFile(path string) (pefile *pe.PEFile, err error) {
 func populatePEReport(report *INode, peFile *pe.PEFile) error {
 	imports := make([]*Dep, 0)
 	for _, imp := range peFile.Imports() {
-		imports = append(imports, &Dep{Name: imp})
+		imports = append(imports, &Dep{Name: util.Lower(imp)})
 	}
 	report.Imports = imports
 
 	forwards := make([]*Dep, 0)
 	for _, fwd := range peFile.Forwards() {
-		forwards = append(forwards, &Dep{Name: fwd})
+		forwards = append(forwards, &Dep{Name: util.Lower(fwd)})
 	}
 	report.Forwards = forwards
 
@@ -233,6 +234,8 @@ func doPrint(report *INode) {
 	}
 
 	for _, fwd := range report.Forwards {
+		re := regexp.MustCompile(`\..*$`)
+		fwd.Name = re.ReplaceAllLiteralString(fwd.Name, ".dll")
 		fwdID := fwd.Write(writers[DepsFile])
 		rel := &Rel{
 			Start: nodeID,
@@ -243,19 +246,14 @@ func doPrint(report *INode) {
 	}
 
 	for _, imp := range report.Imports {
+		re := regexp.MustCompile(`!.*$`)
+		imp.Name = re.ReplaceAllLiteralString(imp.Name, "")
 		impID := imp.Write(writers[DepsFile])
 		rel := &Rel{
 			Start: nodeID,
 			Rel:   Imports,
 			End:   impID,
 		}
-		rel.Write(writers[RelsFile])
-
-		inverseRel := &Rel{
-			Start: impID,
-			Rel:   ImportedBy,
-			End:   nodeID,
-		}
-		inverseRel.Write(writers[RelsFile])
+		rel.Write(writers[ImportFile])
 	}
 }

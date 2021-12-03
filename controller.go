@@ -40,6 +40,12 @@ func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 		return
 	}
 
+	log.Info("creating imports relationships")
+	err = processor.RelateDependecies()
+	if err != nil {
+		return
+	}
+
 	log.Info("creating ACL relationships")
 	err = processor.RelateACLs()
 
