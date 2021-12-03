@@ -36,8 +36,8 @@ require (
 )
 
 replace (
-	// github.com/kgoins/go-winacl => github.com/audibleblink/go-winacl v0.0.2
-	// github.com/kgoins/go-winacl/pkg => github.com/audibleblink/go-winacl v0.0.2
-	github.com/kgoins/go-winacl => c:\users\user\code\go-winacl
-	github.com/kgoins/go-winacl/pkg => c:\users\user\code\go-winacl
+	github.com/kgoins/go-winacl => github.com/audibleblink/go-winacl v0.3.1-0.20211119220522-8801234ee3e4
+	github.com/kgoins/go-winacl/pkg => /Users/blink/code/go-winacl
+// github.com/kgoins/go-winacl => c:\users\user\code\go-winacl
+// github.com/kgoins/go-winacl/pkg => c:\users\user\code\go-winacl
 )

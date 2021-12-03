@@ -109,6 +109,11 @@ func newPEFile(path string) (pefile *pe.PEFile, err error) {
 }
 
 func populatePEReport(report *INode, peFile *pe.PEFile) error {
+	imports := make([]*Dep, 0)
+	for _, imp := range peFile.Imports() {
+		imports = append(imports, &Dep{Name: imp})
+	}
+	report.Imports = imports
 
 	forwards := make([]*Dep, 0)
 	for _, fwd := range peFile.Forwards() {
@@ -235,5 +240,22 @@ func doPrint(report *INode) {
 			End:   fwdID,
 		}
 		rel.Write(writers[RelsFile])
+	}
+
+	for _, imp := range report.Imports {
+		impID := imp.Write(writers[DepsFile])
+		rel := &Rel{
+			Start: nodeID,
+			Rel:   Imports,
+			End:   impID,
+		}
+		rel.Write(writers[RelsFile])
+
+		inverseRel := &Rel{
+			Start: impID,
+			Rel:   ImportedBy,
+			End:   nodeID,
+		}
+		inverseRel.Write(writers[RelsFile])
 	}
 }

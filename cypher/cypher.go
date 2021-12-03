@@ -120,29 +120,10 @@ func (q *Query) Relate(var1, rel, var2 string) *Query {
 
 func (q *Query) ExecuteW() error {
 	sess := q.d.NewSession(neo4j.SessionConfig{})
-	result, err := sess.WriteTransaction(q.txWork)
+	_, err := sess.WriteTransaction(q.txWork)
 	if err != nil {
 		return q.l.Wrap(err)
 	}
-
-	var (
-		ok      bool
-		summary neo4j.ResultSummary
-	)
-
-	if summary, ok = result.(neo4j.ResultSummary); !ok {
-		q.l.Debugf("failed to create summary %v:", result)
-	}
-
-	if q.l.Level == logerr.LogLevelDebug {
-		res := map[string]int{
-			"created":   summary.Counters().NodesCreated(),
-			"props set": summary.Counters().PropertiesSet(),
-			"new rels":  summary.Counters().RelationshipsCreated(),
-		}
-		q.l.Debugf("query result %#v:", res)
-	}
-
 	return nil
 }
 

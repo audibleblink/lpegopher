@@ -35,21 +35,6 @@
         },
 
         {
-            "name": "Collect Runners",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}",
-            "args": [
-                "collect",
-                "runners",
-                "-o",
-                "data/runners.json",
-            ],
-            "envFile": "${workspaceFolder}/.env",
-        },
-
-        {
             "name": "Process All",
             "type": "go",
             "request": "launch",
@@ -57,43 +42,11 @@
             "program": "${workspaceFolder}",
             "args": [
                 "-v",
-                "process",
-                "-r",
-                "/temp/runners.json",
-                "-p",
-                "/temp/pes.json",
-            ],
-            "envFile": "${workspaceFolder}/.env",
-        },
-
-        {
-            "name": "Process AppData",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}",
-            "args": [
-                "--nocolor",
                 "postprocess",
-            ],
-            "envFile": "${workspaceFolder}/.env",
-        },
-        {
-            "name": "DROP and Process AppData",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}",
-            "args": [
-                "-v",
-                "process",
-                "-r",
-                "data/runners.json",
-                "-p",
-                "data/pes.json",
                 "--drop",
             ],
             "envFile": "${workspaceFolder}/.env",
         },
+
     ]
 }

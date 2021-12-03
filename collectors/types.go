@@ -35,6 +35,7 @@ type INode struct {
 	Parent   string `json:"Dir"`
 	Type     string `json:"Type"`
 	Forwards []*Dep `json:"Forwards"`
+	Imports  []*Dep `json:"Imports"`
 	DACL     DACL   `json:"DACL"`
 
 	id string

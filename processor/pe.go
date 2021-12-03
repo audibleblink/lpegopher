@@ -103,10 +103,12 @@ func RelateOwnership() (err error) {
 	log.Debug("relating all (:Principal)-[:OWNS]-(:INode)")
 	err = execString(`
 			CALL apoc.periodic.iterate("
-				MATCH (pcpl:Principal),(inode:INode) WHERE pcpl.nid = inode.owner or pcpl.nid = inode.group RETURN pcpl, inode
+				MATCH (pcpl:Principal),(inode:INode) 
+				WHERE pcpl.nid = inode.owner or pcpl.nid = inode.group 
+				RETURN pcpl, inode
 			","
 				MERGE (pcpl)-[:OWNS]->(inode)
-			", {batchSize:1000})
+			", {batchSize: 1000})
 			`)
 	if err != nil {
 		err = log.Wrap(err)
@@ -122,9 +124,9 @@ func RelateACLs() (err error) {
 		CALL apoc.periodic.iterate("
 			LOAD CSV FROM 'file:////relationships.csv' AS line RETURN line
 		","
-			MATCH (a {nid: line[0]}), (b {nid: line[2]})
+			MATCH (a:Principal {nid: line[0]}), (b:INode {nid: line[2]})
 			CALL apoc.create.relationship(a, line[1], {}, b) YIELD rel RETURN rel
-		", {batchSize:1000, iterateList:true});
+		", {batchSize: 5000});
 		`)
 	if err != nil {
 		err = log.Wrap(err)

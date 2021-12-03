@@ -116,10 +116,6 @@ func Services() {
 			Context: context,
 		}
 
-		// if strings.HasSuffix(context.Name, "ystem") {
-		// 	fmt.Print(1)
-		// }
-
 		service.Exe.Write(writers[ExeFile])
 		service.Context.Write(writers[PrincipalFile])
 		service.Write(writers[RunnersFile])

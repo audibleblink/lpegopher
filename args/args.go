@@ -23,5 +23,5 @@ type processCmd struct {
 	Host     string `arg:"env:NEO_HOST" default:"localhost" placeholder:"<host>"`
 	Port     int    `arg:"env:NEO_PORT" default:"7687" placeholder:"<port>"`
 	Database string `arg:"--db,env:NEO_DBNAME" default:"neo4j" placeholder:"<dbname>"`
-	Protocol string `arg:"--proto,env:NEO_PROTO" default:"bolt+s" placeholder:"<proto>"`
+	Protocol string `arg:"--proto,env:NEO_PROTO" default:"bolt" placeholder:"<proto>"`
 }
