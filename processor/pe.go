@@ -143,7 +143,6 @@ func RelateDependecies() (err error) {
 			LOAD CSV FROM 'file:////imports.csv' AS line RETURN line
 		","
 			MATCH (a:INode {nid: line[0]}), (b:Dep {nid: line[2]})
-			MERGE (a)-[:IMPORTS]->(b)
 			MERGE (b)-[:IMPORTED_BY]->(a)
 		", {batchSize: 20000});
 		`)

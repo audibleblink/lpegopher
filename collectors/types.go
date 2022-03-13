@@ -22,7 +22,7 @@ const (
 	RunsAs     = "RUNS_AS"
 
 	Imports    = "IMPORTS"
-	Forwards   = "FORWARS"
+	Forwards   = "FORWARDS"
 	ImportedBy = "IMPORTED_BY"
 
 	Null = "NULL"
