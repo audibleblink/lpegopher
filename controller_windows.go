@@ -7,10 +7,10 @@ import (
 
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/getsystem"
+	"github.com/audibleblink/memutils"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/collectors"
 	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/rpcls/pkg/procs"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
@@ -51,6 +51,13 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 		collectors.Services()
 	}()
 
+	wg.Add(1)
+	log.Info("collecting autoruns")
+	go func() {
+		defer wg.Done()
+		collectors.Autoruns()
+	}()
+
 	wg.Wait()
 	log.Info("flushing buffers and closing files")
 	collectors.FlashAndClose()
@@ -62,7 +69,7 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 func getSystem() error {
 	pid := argv.GetSystem.PID
 	if pid == 0 {
-		pid = procs.PidForName("winlogon.exe")
+		pid = memutils.PidForName("winlogon.exe")
 		logerr.Infof("stealing winlogon token from pid %d", pid)
 	}
 	return getsystem.InNewProcess(pid, `c:\windows\system32\cmd.exe`, false)

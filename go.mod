@@ -7,12 +7,12 @@ require (
 	github.com/alexflint/go-arg v1.4.2
 	github.com/audibleblink/concurrent-writer v0.1.0
 	github.com/audibleblink/getsystem v0.1.1
-	github.com/audibleblink/rpcls v0.0.0-20210822225556-d855a04ad117
+	github.com/audibleblink/memutils v0.0.2
 	github.com/capnspacehook/taskmaster v0.0.0-20210519235353-1629df7c85e9
 	github.com/kgoins/go-winacl/pkg v0.0.0-00010101000000-000000000000
 	github.com/minio/highwayhash v1.0.2
 	github.com/neo4j/neo4j-go-driver/v4 v4.4.0
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881
+	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
 	www.velocidex.com/golang/binparsergen v0.1.0
 	www.velocidex.com/golang/go-pe v0.1.1-0.20210915141920-02eb5d611e80
 )
@@ -31,6 +31,7 @@ require (
 )
 
 require (
+	github.com/Binject/debug v0.0.0-20211007083345-9605c99179ee // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 )

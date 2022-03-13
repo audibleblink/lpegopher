@@ -8,12 +8,70 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/sys/windows/registry"
+
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/util"
 	"github.com/capnspacehook/taskmaster"
 	"github.com/minio/highwayhash"
 	"golang.org/x/sys/windows/svc/mgr"
 )
+
+var regKeys = []map[registry.Key]string{
+	map[registry.Key]string{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\Run`},
+	map[registry.Key]string{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunOnce`},
+	map[registry.Key]string{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunServices`},
+	map[registry.Key]string{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunServicesOnce`},
+	map[registry.Key]string{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\Run`},
+	map[registry.Key]string{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunOnce`},
+	map[registry.Key]string{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunServices`},
+	map[registry.Key]string{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunServicesOnce`},
+	map[registry.Key]string{registry.CURRENT_USER: `ProgID\Software\Microsoft\Windows\CurrentVersion\Run`},
+}
+
+func Autoruns() {
+	log := logerr.Add("autoruns")
+	defer logerr.ClearContext()
+
+	for _, regKey := range regKeys {
+		for hive, path := range regKey {
+
+			key, err := registry.OpenKey(hive, path, registry.QUERY_VALUE)
+			if err != nil {
+				log.Debugf("unable to read key: %s", err)
+				continue
+			}
+			defer key.Close()
+
+			value, _, err := key.GetStringValue("SystemRoot")
+			if err != nil {
+				log.Debugf("unable to read key value: %s", err)
+				continue
+			}
+
+			path, args := util.SmoothBrainPath(conf.BinaryPathName)
+			context := &Principal{Name: conf.ServiceStartName}
+
+			exe := &INode{
+				Path:   path,
+				Name:   filepath.Base(path),
+				Parent: filepath.Dir(path),
+			}
+
+			service := PERunner{
+				Name:    conf.DisplayName,
+				Type:    "autorun",
+				Args:    args,
+				Exe:     exe,
+				Context: context,
+			}
+
+			service.Exe.Write(writers[ExeFile])
+			service.Context.Write(writers[PrincipalFile])
+			service.Write(writers[RunnersFile])
+		}
+	}
+}
 
 func Tasks() {
 	log := logerr.Add("tasks")
