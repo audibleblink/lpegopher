@@ -10,6 +10,8 @@ import (
 
 	"golang.org/x/sys/windows/registry"
 
+	"github.com/audibleblink/getsystem"
+	"github.com/audibleblink/memutils"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/util"
 	"github.com/capnspacehook/taskmaster"
@@ -18,15 +20,15 @@ import (
 )
 
 var regKeys = []map[registry.Key]string{
-	map[registry.Key]string{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\Run`},
-	map[registry.Key]string{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunOnce`},
-	map[registry.Key]string{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunServices`},
-	map[registry.Key]string{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunServicesOnce`},
-	map[registry.Key]string{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\Run`},
-	map[registry.Key]string{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunOnce`},
-	map[registry.Key]string{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunServices`},
-	map[registry.Key]string{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunServicesOnce`},
-	map[registry.Key]string{registry.CURRENT_USER: `ProgID\Software\Microsoft\Windows\CurrentVersion\Run`},
+	{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\Run`},
+	{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunOnce`},
+	{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunServices`},
+	{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunServicesOnce`},
+	{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\Run`},
+	{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunOnce`},
+	{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunServices`},
+	{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunServicesOnce`},
+	{registry.CURRENT_USER: `ProgID\Software\Microsoft\Windows\CurrentVersion\Run`},
 }
 
 func Autoruns() {
@@ -34,41 +36,54 @@ func Autoruns() {
 	defer logerr.ClearContext()
 
 	for _, regKey := range regKeys {
-		for hive, path := range regKey {
+		for key, subKey := range regKey {
 
-			key, err := registry.OpenKey(hive, path, registry.QUERY_VALUE)
+			key, err := registry.OpenKey(key, subKey, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
 			if err != nil {
 				log.Debugf("unable to read key: %s", err)
 				continue
 			}
 			defer key.Close()
 
-			value, _, err := key.GetStringValue("SystemRoot")
+			info, err := key.Stat()
 			if err != nil {
-				log.Debugf("unable to read key value: %s", err)
+				log.Debugf("unable to read key info: %s", err)
 				continue
 			}
 
-			path, args := util.SmoothBrainPath(conf.BinaryPathName)
-			context := &Principal{Name: conf.ServiceStartName}
-
-			exe := &INode{
-				Path:   path,
-				Name:   filepath.Base(path),
-				Parent: filepath.Dir(path),
+			valueNames, err := key.ReadValueNames(int(info.SubKeyCount))
+			if err != nil {
+				log.Debugf("unable to read subkeys: %s", err)
+				continue
 			}
 
-			service := PERunner{
-				Name:    conf.DisplayName,
-				Type:    "autorun",
-				Args:    args,
-				Exe:     exe,
-				Context: context,
-			}
+			for _, valueName := range valueNames {
+				val, _, err := key.GetStringValue(valueName)
+				if err != nil {
+					log.Debugf("unable to read value: %s", err)
+					continue
+				}
+				path, args := util.SmoothBrainPath(util.EvaluatePath(val))
 
-			service.Exe.Write(writers[ExeFile])
-			service.Context.Write(writers[PrincipalFile])
-			service.Write(writers[RunnersFile])
+				context := &Principal{Name: "unknown"}
+
+				exe := &INode{
+					Path:   path,
+					Name:   filepath.Base(path),
+					Parent: filepath.Dir(path),
+				}
+
+				autorun := PERunner{
+					Name:    valueName,
+					Type:    "autorun",
+					Args:    args,
+					Exe:     exe,
+					Context: context,
+				}
+				autorun.Exe.Write(writers[ExeFile])
+				autorun.Context.Write(writers[PrincipalFile])
+				autorun.Write(writers[RunnersFile])
+			}
 		}
 	}
 }
@@ -180,6 +195,45 @@ func Services() {
 	}
 }
 
+func Processes() {
+	log := logerr.Add("processes")
+	defer logerr.ClearContext()
+
+	processes, err := memutils.Processes()
+	if err != nil {
+		log.Warnf("failed to enumerate processes: %s", err)
+		return
+	}
+
+	for _, process := range processes {
+
+		path, args := util.SmoothBrainPath(util.EvaluatePath(process.Exe))
+		exe := &INode{
+			Path:   path,
+			Name:   filepath.Base(path),
+			Parent: filepath.Dir(path),
+		}
+
+		owner, err := getsystem.TokenOwnerFromPid(process.Pid)
+		if err != nil {
+			log.Warnf("failed to query owner of pid %d: %s", process.Pid, err)
+			continue
+		}
+		context := &Principal{Name: owner}
+
+		proc := PERunner{
+			Name:    process.Exe,
+			Type:    "process",
+			Args:    args,
+			Exe:     exe,
+			Context: context,
+		}
+
+		proc.Exe.Write(writers[ExeFile])
+		proc.Context.Write(writers[PrincipalFile])
+		proc.Write(writers[RunnersFile])
+	}
+}
 func hashFor(data string) string {
 	data = util.PathFix(data)
 	hash, err := highwayhash.New(key)

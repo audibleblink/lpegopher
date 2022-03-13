@@ -192,7 +192,7 @@ func (r PERunner) ID() string {
 	if r.id != "" {
 		return r.id
 	}
-	r.id = hashFor(r.Name)
+	r.id = hashFor(fmt.Sprintf("%s:%s", r.Type, r.Name))
 	return r.id
 }
 

@@ -58,6 +58,13 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 		collectors.Autoruns()
 	}()
 
+	wg.Add(1)
+	log.Info("collecting processes")
+	go func() {
+		defer wg.Done()
+		collectors.Processes()
+	}()
+
 	wg.Wait()
 	log.Info("flushing buffers and closing files")
 	collectors.FlashAndClose()
