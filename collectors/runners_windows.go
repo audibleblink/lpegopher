@@ -1,13 +1,10 @@
 package collectors
 
 import (
-	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
-	"strings"
 
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 
 	"github.com/audibleblink/getsystem"
@@ -15,7 +12,6 @@ import (
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/util"
 	"github.com/capnspacehook/taskmaster"
-	"github.com/minio/highwayhash"
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
@@ -148,11 +144,14 @@ func Services() {
 	log := logerr.Add("services")
 	defer logerr.ClearContext()
 
-	svcMgr, err := mgr.Connect()
+	var s *uint16
+	h, err := windows.OpenSCManager(s, nil, windows.SC_MANAGER_CONNECT|windows.SC_MANAGER_ENUMERATE_SERVICE)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
+
+	svcMgr := &mgr.Mgr{Handle: h}
 
 	svcNames, err := svcMgr.ListServices()
 	if err != nil {
@@ -161,11 +160,15 @@ func Services() {
 	}
 
 	for _, svcName := range svcNames {
-		svc, err := svcMgr.OpenService(svcName)
+
+		h, err := windows.OpenService(svcMgr.Handle, windows.StringToUTF16Ptr(svcName), windows.SERVICE_QUERY_CONFIG)
 		if err != nil {
 			log.Warnf("failed to open service %s: %s", svcName, err)
 			continue
 		}
+
+		svc := &mgr.Service{Name: svcName, Handle: h}
+
 		conf, err := svc.Config()
 		if err != nil {
 			log.Warnf("failed to fetch service config: %s: %s", svcName, err)
@@ -214,11 +217,18 @@ func Processes() {
 			Parent: filepath.Dir(path),
 		}
 
-		owner, err := getsystem.TokenOwnerFromPid(process.Pid)
+		token, err := tokenForPid(process.Pid)
+		if err != nil {
+			log.Warnf("failed to query token of pid %d: %s", process.Pid, err)
+			continue
+		}
+
+		owner, err := getsystem.TokenOwner(token)
 		if err != nil {
 			log.Warnf("failed to query owner of pid %d: %s", process.Pid, err)
 			continue
 		}
+
 		context := &Principal{Name: owner}
 
 		proc := PERunner{
@@ -234,20 +244,17 @@ func Processes() {
 		proc.Write(writers[RunnersFile])
 	}
 }
-func hashFor(data string) string {
-	data = util.PathFix(data)
-	hash, err := highwayhash.New(key)
+
+func tokenForPid(pid int) (tokenH windows.Token, err error) {
+	hProc, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, true, uint32(pid))
 	if err != nil {
-		fmt.Printf("Failed to create HighwayHash instance: %v", err)
-		os.Exit(1)
+		err = fmt.Errorf("tokenForPid | openProcess | %s", err)
+		return
 	}
 
-	txt := strings.NewReader(data)
-	if _, err = io.Copy(hash, txt); err != nil {
-		fmt.Printf("hash reader creation failed: %v", err)
-		os.Exit(1)
+	err = windows.OpenProcessToken(hProc, windows.TOKEN_QUERY, &tokenH)
+	if err != nil {
+		err = fmt.Errorf("tokenForPid | openToken | %s", err)
 	}
-
-	checksum := hash.Sum(nil)
-	return hex.EncodeToString(checksum)
+	return
 }
