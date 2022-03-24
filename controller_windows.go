@@ -17,6 +17,8 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	log := logerr.Add("doCollectCmd")
 	log.Info("collection started")
 
+	collectors.InitOutputFiles()
+
 	var wg sync.WaitGroup
 
 	files, err := ioutil.ReadDir(args.Collect.Path)
@@ -69,7 +71,9 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	log.Info("flushing buffers and closing files")
 	collectors.FlashAndClose()
 	log.Info("collection complete")
-	log.Info("don't forget to upload/move *.csv to neo4j's `import` directory before running postprocessing")
+	log.Warn("=============================================================================================")
+	log.Warn("don't forget to upload/move *.csv to neo4j's `import` directory before running postprocessing")
+	log.Warn("=============================================================================================")
 	return
 }
 
