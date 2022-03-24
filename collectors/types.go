@@ -1,11 +1,14 @@
 package collectors
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/audibleblink/pegopher/util"
+	"github.com/minio/highwayhash"
 )
 
 const (
@@ -192,7 +195,7 @@ func (r PERunner) ID() string {
 	if r.id != "" {
 		return r.id
 	}
-	r.id = hashFor(r.Name)
+	r.id = hashFor(fmt.Sprintf("%s:%s", r.Type, r.Name))
 	return r.id
 }
 
@@ -217,4 +220,22 @@ func (r PERunner) Write(file io.Writer) string {
 		io.WriteString(file, csv)
 	}
 	return id
+}
+
+func hashFor(data string) string {
+	data = util.PathFix(data)
+	hash, err := highwayhash.New(key)
+	if err != nil {
+		fmt.Printf("Failed to create HighwayHash instance: %v", err)
+		os.Exit(1)
+	}
+
+	txt := strings.NewReader(data)
+	if _, err = io.Copy(hash, txt); err != nil {
+		fmt.Printf("hash reader creation failed: %v", err)
+		os.Exit(1)
+	}
+
+	checksum := hash.Sum(nil)
+	return hex.EncodeToString(checksum)
 }

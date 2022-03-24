@@ -7,15 +7,17 @@ import (
 
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/getsystem"
+	"github.com/audibleblink/memutils"
 	"github.com/audibleblink/pegopher/args"
 	"github.com/audibleblink/pegopher/collectors"
 	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/rpcls/pkg/procs"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	log := logerr.Add("doCollectCmd")
 	log.Info("collection started")
+
+	collectors.InitOutputFiles()
 
 	var wg sync.WaitGroup
 
@@ -51,18 +53,34 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 		collectors.Services()
 	}()
 
+	wg.Add(1)
+	log.Info("collecting autoruns")
+	go func() {
+		defer wg.Done()
+		collectors.Autoruns()
+	}()
+
+	wg.Add(1)
+	log.Info("collecting processes")
+	go func() {
+		defer wg.Done()
+		collectors.Processes()
+	}()
+
 	wg.Wait()
 	log.Info("flushing buffers and closing files")
 	collectors.FlashAndClose()
 	log.Info("collection complete")
-	log.Info("don't forget to upload/move *.csv to neo4j's `import` directory before running postprocessing")
+	log.Warn("=============================================================================================")
+	log.Warn("don't forget to upload/move *.csv to neo4j's `import` directory before running postprocessing")
+	log.Warn("=============================================================================================")
 	return
 }
 
 func getSystem() error {
 	pid := argv.GetSystem.PID
 	if pid == 0 {
-		pid = procs.PidForName("winlogon.exe")
+		pid = memutils.PidForName("winlogon.exe")
 		logerr.Infof("stealing winlogon token from pid %d", pid)
 	}
 	return getsystem.InNewProcess(pid, `c:\windows\system32\cmd.exe`, false)

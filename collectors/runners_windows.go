@@ -1,19 +1,88 @@
 package collectors
 
 import (
-	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
-	"strings"
 
+	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
+
+	"github.com/audibleblink/getsystem"
+	"github.com/audibleblink/memutils"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/util"
 	"github.com/capnspacehook/taskmaster"
-	"github.com/minio/highwayhash"
 	"golang.org/x/sys/windows/svc/mgr"
 )
+
+var regKeys = []map[registry.Key]string{
+	{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\Run`},
+	{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunOnce`},
+	{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunServices`},
+	{registry.LOCAL_MACHINE: `Software\Microsoft\Windows\CurrentVersion\RunServicesOnce`},
+	{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\Run`},
+	{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunOnce`},
+	{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunServices`},
+	{registry.CURRENT_USER: `Software\Microsoft\Windows\CurrentVersion\RunServicesOnce`},
+	{registry.CURRENT_USER: `ProgID\Software\Microsoft\Windows\CurrentVersion\Run`},
+}
+
+func Autoruns() {
+	log := logerr.Add("autoruns")
+	defer logerr.ClearContext()
+
+	for _, regKey := range regKeys {
+		for key, subKey := range regKey {
+
+			key, err := registry.OpenKey(key, subKey, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
+			if err != nil {
+				log.Debugf("unable to read key: %s", err)
+				continue
+			}
+			defer key.Close()
+
+			info, err := key.Stat()
+			if err != nil {
+				log.Debugf("unable to read key info: %s", err)
+				continue
+			}
+
+			valueNames, err := key.ReadValueNames(int(info.SubKeyCount))
+			if err != nil {
+				log.Debugf("unable to read subkeys: %s", err)
+				continue
+			}
+
+			for _, valueName := range valueNames {
+				val, _, err := key.GetStringValue(valueName)
+				if err != nil {
+					log.Debugf("unable to read value: %s", err)
+					continue
+				}
+				path, args := util.SmoothBrainPath(util.EvaluatePath(val))
+
+				context := &Principal{Name: "unknown"}
+
+				exe := &INode{
+					Path:   path,
+					Name:   filepath.Base(path),
+					Parent: filepath.Dir(path),
+				}
+
+				autorun := PERunner{
+					Name:    valueName,
+					Type:    "autorun",
+					Args:    args,
+					Exe:     exe,
+					Context: context,
+				}
+				autorun.Exe.Write(writers[ExeFile])
+				autorun.Context.Write(writers[PrincipalFile])
+				autorun.Write(writers[RunnersFile])
+			}
+		}
+	}
+}
 
 func Tasks() {
 	log := logerr.Add("tasks")
@@ -75,11 +144,14 @@ func Services() {
 	log := logerr.Add("services")
 	defer logerr.ClearContext()
 
-	svcMgr, err := mgr.Connect()
+	var s *uint16
+	h, err := windows.OpenSCManager(s, nil, windows.SC_MANAGER_CONNECT|windows.SC_MANAGER_ENUMERATE_SERVICE)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
+
+	svcMgr := &mgr.Mgr{Handle: h}
 
 	svcNames, err := svcMgr.ListServices()
 	if err != nil {
@@ -88,11 +160,15 @@ func Services() {
 	}
 
 	for _, svcName := range svcNames {
-		svc, err := svcMgr.OpenService(svcName)
+
+		h, err := windows.OpenService(svcMgr.Handle, windows.StringToUTF16Ptr(svcName), windows.SERVICE_QUERY_CONFIG)
 		if err != nil {
 			log.Warnf("failed to open service %s: %s", svcName, err)
 			continue
 		}
+
+		svc := &mgr.Service{Name: svcName, Handle: h}
+
 		conf, err := svc.Config()
 		if err != nil {
 			log.Warnf("failed to fetch service config: %s: %s", svcName, err)
@@ -122,20 +198,63 @@ func Services() {
 	}
 }
 
-func hashFor(data string) string {
-	data = util.PathFix(data)
-	hash, err := highwayhash.New(key)
+func Processes() {
+	log := logerr.Add("processes")
+	defer logerr.ClearContext()
+
+	processes, err := memutils.Processes()
 	if err != nil {
-		fmt.Printf("Failed to create HighwayHash instance: %v", err)
-		os.Exit(1)
+		log.Warnf("failed to enumerate processes: %s", err)
+		return
 	}
 
-	txt := strings.NewReader(data)
-	if _, err = io.Copy(hash, txt); err != nil {
-		fmt.Printf("hash reader creation failed: %v", err)
-		os.Exit(1)
+	for _, process := range processes {
+
+		path, args := util.SmoothBrainPath(util.EvaluatePath(process.Exe))
+		exe := &INode{
+			Path:   path,
+			Name:   filepath.Base(path),
+			Parent: filepath.Dir(path),
+		}
+
+		token, err := tokenForPid(process.Pid)
+		if err != nil {
+			log.Warnf("failed to query token of pid %d: %s", process.Pid, err)
+			continue
+		}
+
+		owner, err := getsystem.TokenOwner(token)
+		if err != nil {
+			log.Warnf("failed to query owner of pid %d: %s", process.Pid, err)
+			continue
+		}
+
+		context := &Principal{Name: owner}
+
+		proc := PERunner{
+			Name:    process.Exe,
+			Type:    "process",
+			Args:    args,
+			Exe:     exe,
+			Context: context,
+		}
+
+		proc.Exe.Write(writers[ExeFile])
+		proc.Context.Write(writers[PrincipalFile])
+		proc.Write(writers[RunnersFile])
+	}
+}
+
+func tokenForPid(pid int) (tokenH windows.Token, err error) {
+	hProc, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, true, uint32(pid))
+	if err != nil {
+		err = fmt.Errorf("tokenForPid | openProcess | %s", err)
+		return
 	}
 
-	checksum := hash.Sum(nil)
-	return hex.EncodeToString(checksum)
+	err = windows.OpenProcessToken(hProc, windows.TOKEN_QUERY, &tokenH)
+	if err != nil {
+		err = fmt.Errorf("tokenForPid | openToken | %s", err)
+	}
+	return
 }
