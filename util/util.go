@@ -146,7 +146,13 @@ func SmoothBrainPath(cmdline string) (bin, args string) {
 	}
 
 	splitCmd := strings.Split(cmdline, " ")
-	bin = splitCmd[0]
-	args = strings.Join(splitCmd[1:], " ")
+
+	for idx, part := range splitCmd {
+		if strings.HasSuffix(part, ".exe") || strings.HasSuffix(part, ".dll") {
+			bin = strings.Join(splitCmd[0:idx+1], " ")
+			args = strings.Join(splitCmd[idx+1:], " ")
+		}
+	}
+
 	return
 }
