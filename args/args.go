@@ -16,7 +16,8 @@ type getSystemCmd struct {
 }
 
 type processCmd struct {
-	Drop bool `help:"drop the database before processing" default:"false"`
+	Drop bool   `help:"drop the database before processing" default:"false"`
+	HTTP string `help:"stage files from cwd instead of needing to upload to /import"`
 
 	Username string `arg:"--user,env:NEO_USER" default:"neo4j" placeholder:"<user>"`
 	Password string `arg:"--pass,env:NEO_PASSWORD" default:"neo4j" placeholder:"<pass>"`

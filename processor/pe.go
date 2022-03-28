@@ -7,11 +7,11 @@ import (
 	"github.com/audibleblink/pegopher/node"
 )
 
-func InsertAllNodes() (err error) {
+func InsertAllNodes(stageURL string) (err error) {
 	log := logerr.Add("file inserts")
 
 	log.Debug("processing exes")
-	query := ` LOAD CSV FROM'file:////exes.csv' AS line
+	query := `LOAD CSV FROM '%s/exes.csv' AS line
 		WITH line
 		CREATE (:Exe:INode {
 			nid: line[0], 
@@ -20,13 +20,14 @@ func InsertAllNodes() (err error) {
 			parent: line[3],
 			owner: line[4],
 			group: line[5] })`
-	err = execString(query)
+
+	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
 		return
 	}
 	log.Debug("processing dlls")
-	query = ` LOAD CSV FROM'file:////dlls.csv' AS line
+	query = `LOAD CSV FROM '%s/dlls.csv' AS line
 		WITH line
 		CREATE (:Dll:INode {
 			nid: line[0], 
@@ -35,14 +36,14 @@ func InsertAllNodes() (err error) {
 			parent: line[3],
 			owner: line[4],
 			group: line[5] })`
-	err = execString(query)
+	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
 		return
 	}
 
 	log.Debug("processing dirs")
-	query = ` LOAD CSV FROM'file:////dirs.csv' AS line
+	query = `LOAD CSV FROM '%s/dirs.csv' AS line
 		WITH line
 		CREATE (:Directory:INode {
 			nid: line[0], 
@@ -51,27 +52,25 @@ func InsertAllNodes() (err error) {
 			parent: line[3],
 			owner: line[4],
 			group: line[5] })`
-	err = execString(query)
+	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
 		return
 	}
 
 	log.Debug("processing forwards")
-	query = `
-	LOAD CSV FROM'file:////deps.csv' AS line
+	query = `LOAD CSV FROM '%s/deps.csv' AS line
 		WITH line CREATE (:Dep {nid: line[0], name: line[1]})`
-	err = execString(query)
+	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
 		return
 	}
 
 	log.Debug("processing principals")
-	query = ` 
-	LOAD CSV FROM'file:////principals.csv' AS line
+	query = `LOAD CSV FROM '%s/principals.csv' AS line
 		WITH line CREATE (:Principal {nid: line[0], name: line[1]})`
-	err = execString(query)
+	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
 		return
@@ -117,17 +116,17 @@ func RelateOwnership() (err error) {
 	return
 }
 
-func RelateACLs() (err error) {
+func RelateACLs(stageURL string) (err error) {
 	log := logerr.Add("acl relationships")
 	log.Debug("relating all (:Principal)-[$ACE]-(:INodes)")
-	err = execString(`
-		CALL apoc.periodic.iterate("
-			LOAD CSV FROM 'file:////relationships.csv' AS line RETURN line
+	query := `CALL apoc.periodic.iterate("
+			LOAD CSV FROM '%s/relationships.csv' AS line RETURN line
 		","
 			MATCH (a:Principal {nid: line[0]}), (b:INode {nid: line[2]})
 			CALL apoc.create.relationship(a, line[1], {}, b) YIELD rel RETURN rel
 		", {batchSize: 20000});
-		`)
+		`
+	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
 		return
@@ -135,17 +134,17 @@ func RelateACLs() (err error) {
 	return
 }
 
-func RelateDependecies() (err error) {
+func RelateDependecies(stageURL string) (err error) {
 	log := logerr.Add("dependecy relationships")
 	log.Debug("relating (:INode)-[:IMPORTS]-(:Dep)")
-	err = execString(`
-		CALL apoc.periodic.iterate("
-			LOAD CSV FROM 'file:////imports.csv' AS line RETURN line
+	query := `CALL apoc.periodic.iterate("
+			LOAD CSV FROM '%s/imports.csv' AS line RETURN line
 		","
 			MATCH (a:INode {nid: line[0]}), (b:Dep {nid: line[2]})
 			MERGE (b)-[:IMPORTED_BY]->(a)
 		", {batchSize: 20000});
-		`)
+		`
+	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
 		return

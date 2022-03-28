@@ -1,6 +1,8 @@
 package processor
 
 import (
+	"fmt"
+
 	"github.com/audibleblink/pegopher/cypher"
 	"github.com/audibleblink/pegopher/logerr"
 )
@@ -14,10 +16,9 @@ func execString(query string) error {
 	return cypherQ.ExecuteW()
 }
 
-func InsertAllRunners() (err error) {
+func InsertAllRunners(stageURL string) (err error) {
 	log := logerr.Add("runner inserts")
-	err = execString(`
-	LOAD CSV FROM'file:////runners.csv' AS line
+	query := `LOAD CSV FROM '%s/runners.csv' AS line
 	WITH line
 	CREATE (e:Runner {
 		nid: line[0], 
@@ -28,7 +29,9 @@ func InsertAllRunners() (err error) {
 		parent: line[5],
 		context: line[6],
 		runlevel: line[7]})
-	`)
+	`
+
+	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
 	}
@@ -72,4 +75,12 @@ func BulkRelateRunners() (err error) {
 	`)
 
 	return
+}
+
+func dataPrefix(url string) (uri string) {
+	if url == "" {
+		return fmt.Sprintf("file://")
+	} else {
+		return fmt.Sprintf("http://%s", url)
+	}
 }
