@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"winacl"
 
 	"github.com/Microsoft/go-winio"
 	"github.com/audibleblink/pegopher/logerr"
 	"github.com/audibleblink/pegopher/node"
 	"github.com/audibleblink/pegopher/util"
-	winacl "github.com/kgoins/go-winacl/pkg"
 	"golang.org/x/sys/windows"
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"
