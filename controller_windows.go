@@ -19,6 +19,9 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 
 	collectors.InitOutputFiles()
 
+	log.Info("collecting system principals")
+	collectors.CreateGroupPrincipals()
+
 	var wg sync.WaitGroup
 
 	files, err := ioutil.ReadDir(args.Collect.Path)
@@ -38,13 +41,6 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 
 		}
 	}
-
-	wg.Add(1)
-	log.Info("collecting system principals")
-	go func() {
-		defer wg.Done()
-		collectors.CreateGroupPrincipals()
-	}()
 
 	wg.Add(1)
 	log.Info("collecting tasks")

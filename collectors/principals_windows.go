@@ -1,8 +1,6 @@
 package collectors
 
 import (
-	"fmt"
-
 	"github.com/audibleblink/pegopher/logerr"
 	winapi "github.com/gueencode/go-win64api"
 )
@@ -30,15 +28,15 @@ func CreateGroupPrincipals() error {
 }
 
 func CreateGroupMemberPrincipals(group string) error {
-	log := logerr.Add("createGroupPrincipals")
+	log := logerr.Add("createGroupMemberPrincipals")
 	users, err := winapi.LocalGroupGetMembers(group)
 	if err != nil {
-		return log.Add("listLocalGroupMembers").Wrap(err)
+		return log.Wrap(err)
 	}
 
 	for _, user := range users {
 		principal := Principal{}
-		principal.Name = fmt.Sprintf(`%s\%s`, user.Domain, user.Name)
+		principal.Name = user.DomainAndName
 		principal.Group = group
 		principal.Write(writers[PrincipalFile])
 	}
