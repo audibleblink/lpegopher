@@ -96,8 +96,9 @@ type ReadableAce struct {
 
 // Principal represents Users or Groups
 type Principal struct {
-	Name string `json:"Name"`
-	id   string
+	Name  string `json:"Name"`
+	Group string `json:"Group"`
+	id    string
 }
 
 func (p Principal) ID() string {
@@ -112,6 +113,7 @@ func (p Principal) ToCSV() string {
 	fields := make([]string, 6)
 	fields[0] = p.ID()
 	fields[1] = util.PathFix(p.Name)
+	fields[2] = util.PathFix(p.Group)
 	row := fmt.Sprintf("%s\n", strings.Join(fields, ","))
 	return row
 }

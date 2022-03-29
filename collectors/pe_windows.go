@@ -28,7 +28,7 @@ func walkFunction(path string, info os.DirEntry, err error) error {
 	log := logerr.Add("dirwalk")
 
 	if err != nil {
-		log.Warnf("recursion, amirite?: %s", err)
+		log.Warnf("%v", err)
 	}
 
 	if info.IsDir() {

@@ -76,6 +76,7 @@ func Autoruns() {
 					Exe:     exe,
 					Context: context,
 				}
+
 				autorun.Exe.Write(writers[ExeFile])
 				autorun.Context.Write(writers[PrincipalFile])
 				autorun.Write(writers[RunnersFile])

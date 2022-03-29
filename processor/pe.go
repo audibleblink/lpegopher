@@ -69,7 +69,7 @@ func InsertAllNodes(stageURL string) (err error) {
 
 	log.Debug("processing principals")
 	query = `LOAD CSV FROM '%s/principals.csv' AS line
-		WITH line CREATE (:Principal {nid: line[0], name: line[1]})`
+		WITH line CREATE (:Principal {nid: line[0], name: line[1], group: line[2]})`
 	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
 		err = log.Wrap(err)
@@ -108,6 +108,25 @@ func RelateOwnership() (err error) {
 			","
 				MERGE (pcpl)-[:OWNS]->(inode)
 			", {batchSize: 1000})
+			`)
+	if err != nil {
+		err = log.Wrap(err)
+		return
+	}
+	return
+}
+
+func RelateMembership() (err error) {
+	log := logerr.Add("membership creation")
+	log.Debug("relating all (:Principal)-[:MEMBER_OF]-(:Principal)")
+	err = execString(`
+			CALL apoc.periodic.iterate("
+				MATCH (group:Principal),(user:Principal) 
+				WHERE user.group = group.name 
+				RETURN user, group
+			","
+				MERGE (user)-[:MEMBER_OF]->(group)
+			", {batchSize: 10})
 			`)
 	if err != nil {
 		err = log.Wrap(err)

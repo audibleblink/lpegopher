@@ -31,7 +31,11 @@ require (
 require (
 	github.com/Binject/debug v0.0.0-20211007083345-9605c99179ee // indirect
 	github.com/Velocidex/yaml/v2 v2.2.8 // indirect
+	github.com/google/cabbie v1.0.2 // indirect
+	github.com/google/glazier v0.0.0-20210617205946-bf91b619f5d4 // indirect
+	github.com/gueencode/go-win64api v0.0.0-20211213220644-17b0170c4e3d // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/scjalliance/comshim v0.0.0-20190308082608-cf06d2532c4e // indirect
 )
