@@ -1,7 +1,7 @@
 package collectors
 
 import (
-	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/lpegopher/logerr"
 	winapi "github.com/gueencode/go-win64api"
 )
 

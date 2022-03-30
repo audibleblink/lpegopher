@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/pegopher/util"
+	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/lpegopher/util"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 

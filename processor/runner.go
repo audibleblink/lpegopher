@@ -3,8 +3,8 @@ package processor
 import (
 	"fmt"
 
-	"github.com/audibleblink/pegopher/cypher"
-	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/lpegopher/cypher"
+	"github.com/audibleblink/lpegopher/logerr"
 )
 
 func execString(query string) error {

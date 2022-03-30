@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/alexflint/go-arg"
-	"github.com/audibleblink/pegopher/args"
-	"github.com/audibleblink/pegopher/cypher"
-	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/lpegopher/args"
+	"github.com/audibleblink/lpegopher/cypher"
+	"github.com/audibleblink/lpegopher/logerr"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 

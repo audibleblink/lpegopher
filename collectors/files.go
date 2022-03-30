@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/audibleblink/concurrent-writer"
-	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/lpegopher/logerr"
 )
 
 const (

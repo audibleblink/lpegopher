@@ -9,8 +9,8 @@ import (
 
 	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/memutils"
-	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/pegopher/util"
+	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/lpegopher/util"
 	"github.com/capnspacehook/taskmaster"
 	"golang.org/x/sys/windows/svc/mgr"
 )

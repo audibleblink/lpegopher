@@ -8,9 +8,9 @@ import (
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/memutils"
-	"github.com/audibleblink/pegopher/args"
-	"github.com/audibleblink/pegopher/collectors"
-	"github.com/audibleblink/pegopher/logerr"
+	"github.com/audibleblink/lpegopher/args"
+	"github.com/audibleblink/lpegopher/collectors"
+	"github.com/audibleblink/lpegopher/logerr"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {

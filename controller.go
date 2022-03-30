@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/alexflint/go-arg"
-	"github.com/audibleblink/pegopher/args"
-	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/pegopher/processor"
+	"github.com/audibleblink/lpegopher/args"
+	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/lpegopher/processor"
 )
 
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {

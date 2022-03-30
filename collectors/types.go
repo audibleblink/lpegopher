@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/audibleblink/pegopher/util"
+	"github.com/audibleblink/lpegopher/util"
 	"github.com/minio/highwayhash"
 )
 

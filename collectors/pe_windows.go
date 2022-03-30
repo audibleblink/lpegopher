@@ -9,9 +9,9 @@ import (
 	"winacl"
 
 	"github.com/Microsoft/go-winio"
-	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/pegopher/node"
-	"github.com/audibleblink/pegopher/util"
+	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/lpegopher/node"
+	"github.com/audibleblink/lpegopher/util"
 	"golang.org/x/sys/windows"
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"

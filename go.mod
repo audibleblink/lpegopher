@@ -1,4 +1,4 @@
-module github.com/audibleblink/pegopher
+module github.com/audibleblink/lpegopher
 
 go 1.18
 

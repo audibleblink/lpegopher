@@ -3,8 +3,8 @@ package processor
 import (
 	"fmt"
 
-	"github.com/audibleblink/pegopher/logerr"
-	"github.com/audibleblink/pegopher/node"
+	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/lpegopher/node"
 )
 
 func InsertAllNodes(stageURL string) (err error) {
