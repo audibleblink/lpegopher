@@ -46,9 +46,9 @@ func main() {
 			logerr.Fatalf("collection failed: %v", err)
 		}
 
-	case argv.PostProcess != nil:
+	case argv.Process != nil:
 		dbInit()
-		if argv.PostProcess.Drop {
+		if argv.Process.Drop {
 			err := dbDrop()
 			if err != nil {
 				logerr.Fatalf("db drop failed: %v", err)
@@ -72,12 +72,12 @@ func main() {
 
 func dbInit() {
 	log := logerr.Add("db init")
-	host := fmt.Sprintf("%s://%s", argv.PostProcess.Protocol, argv.PostProcess.Host)
+	host := fmt.Sprintf("%s://%s", argv.Process.Protocol, argv.Process.Host)
 
 	var err error
 	cypher.Driver, err = neo4j.NewDriver(
 		host,
-		neo4j.BasicAuth(argv.PostProcess.Username, argv.PostProcess.Password, ""),
+		neo4j.BasicAuth(argv.Process.Username, argv.Process.Password, ""),
 	)
 	if err != nil {
 		log.Fatal(err.Error())

@@ -12,20 +12,20 @@ import (
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	log := logerr.Add("postprocessing")
 
-	if args.PostProcess.HTTP != "" {
+	if args.Process.HTTP != "" {
 		log.Info("starting fileserver")
-		fileServer := serveFiles(args.PostProcess.HTTP)
+		fileServer := serveFiles(args.Process.HTTP)
 		defer fileServer.Close()
 	}
 
 	log.Info("creating file and principal nodes")
-	err = processor.InsertAllNodes(args.PostProcess.HTTP)
+	err = processor.InsertAllNodes(args.Process.HTTP)
 	if err != nil {
 		return
 	}
 
 	log.Info("creating runner nodes")
-	err = processor.InsertAllRunners(args.PostProcess.HTTP)
+	err = processor.InsertAllRunners(args.Process.HTTP)
 	if err != nil {
 		return
 	}
@@ -49,13 +49,13 @@ func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 	}
 
 	log.Info("creating imports relationships")
-	err = processor.RelateDependecies(args.PostProcess.HTTP)
+	err = processor.RelateDependecies(args.Process.HTTP)
 	if err != nil {
 		return
 	}
 
 	log.Info("creating ACL relationships")
-	err = processor.RelateACLs(args.PostProcess.HTTP)
+	err = processor.RelateACLs(args.Process.HTTP)
 
 	log.Info("creating user/group memberships")
 	err = processor.RelateMembership()

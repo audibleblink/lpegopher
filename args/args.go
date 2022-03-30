@@ -3,9 +3,9 @@ package args
 var Args ArgType
 
 type ArgType struct {
-	GetSystem   *getSystemCmd `arg:"subcommand" help:"Utility for acquiring SYSTEM before collection"`
-	Collect     *collectCmd   `arg:"subcommand" help:"Collect Windows PE and Runner data"`
-	PostProcess *processCmd   `arg:"subcommand" help:"Run Post-Processing tasks and populate neo4j"`
+	GetSystem *getSystemCmd `arg:"subcommand" help:"Utility for acquiring SYSTEM before collection"`
+	Collect   *collectCmd   `arg:"subcommand" help:"Collect Windows PE and Runner data"`
+	Process   *processCmd   `arg:"subcommand" help:"Run Post-Processing tasks and populate neo4j"`
 
 	Debug   bool `arg:"-v" help:"verbose output" default:"false"`
 	NoColor bool `arg:"--nocolor" help:"Disable colored output" default:"false"`

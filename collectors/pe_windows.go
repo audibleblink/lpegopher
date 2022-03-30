@@ -63,7 +63,6 @@ func walkFunction(path string, info os.DirEntry, err error) error {
 		}
 
 		doPrint(report)
-
 	}
 	return nil
 }
