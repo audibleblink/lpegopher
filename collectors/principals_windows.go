@@ -15,6 +15,7 @@ func CreateGroupPrincipals() error {
 	for _, group := range groups {
 		principal := Principal{}
 		principal.Name = group.Name
+		principal.Type = "group"
 		principal.Write(writers[PrincipalFile])
 
 		err := CreateGroupMemberPrincipals(group.Name)
@@ -38,6 +39,7 @@ func CreateGroupMemberPrincipals(group string) error {
 		principal := Principal{}
 		principal.Name = user.DomainAndName
 		principal.Group = group
+		principal.Type = "user"
 		principal.Write(writers[PrincipalFile])
 	}
 

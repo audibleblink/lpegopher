@@ -98,6 +98,7 @@ type ReadableAce struct {
 type Principal struct {
 	Name  string `json:"Name"`
 	Group string `json:"Group"`
+	Type  string `json:"Type"`
 	id    string
 }
 
@@ -114,6 +115,7 @@ func (p Principal) ToCSV() string {
 	fields[0] = p.ID()
 	fields[1] = util.PathFix(p.Name)
 	fields[2] = util.PathFix(p.Group)
+	fields[3] = p.Type
 	row := fmt.Sprintf("%s\n", strings.Join(fields, ","))
 	return row
 }
