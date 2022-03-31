@@ -16,8 +16,9 @@ type getSystemCmd struct {
 }
 
 type processCmd struct {
+	Dir  string `arg:"positional,required" help:"Directory containing the output csv files"`
 	Drop bool   `help:"drop the database before processing" default:"false"`
-	HTTP string `help:"stage files from cwd instead of needing to upload to /import"`
+	HTTP string `help:"serve files to neo4j instead of needing to upload to its /import dir" placeholder:"<host:port>"`
 
 	Username string `arg:"--user,env:NEO_USER" default:"neo4j" placeholder:"<user>"`
 	Password string `arg:"--pass,env:NEO_PASSWORD" default:"neo4j" placeholder:"<pass>"`

@@ -1,6 +1,7 @@
 *.exe
 .env
 lpedata
+lpegopher
 data
 *.json
 *.zip

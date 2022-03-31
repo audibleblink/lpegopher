@@ -7,10 +7,10 @@ import (
 
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/getsystem"
-	"github.com/audibleblink/memutils"
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/collectors"
 	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/memutils"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
@@ -24,14 +24,14 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 
 	var wg sync.WaitGroup
 
-	files, err := ioutil.ReadDir(args.Collect.Path)
+	files, err := ioutil.ReadDir(args.Collect.Root)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	for _, f := range files {
 		if f.IsDir() {
-			path := filepath.Join(args.Collect.Path, f.Name())
+			path := filepath.Join(args.Collect.Root, f.Name())
 			log.Debugf("forking collection of %s", path)
 			wg.Add(1)
 			go func(startPath string) {
