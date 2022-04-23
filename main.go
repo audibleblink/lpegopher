@@ -124,7 +124,7 @@ func dbCreateIndices() error {
 		switch e := err.(type) {
 		case *neo4j.Neo4jError:
 			if e.Code == "Neo.ClientError.Schema.EquivalentSchemaRuleAlreadyExists" {
-				log.Debug("node constraints already  in place, skipping")
+				log.Debug("node constraints already in place, skipping")
 				return nil
 			} else {
 				return log.Wrap(err)
