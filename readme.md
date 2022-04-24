@@ -1,4 +1,6 @@
-# lpepgopher
+# lpegopher
+
+![schema](schema.png)
 
 Collect import/export data from PE files, file-system security descriptors, and automatic file
 runners to determine privilege escalation paths and persistence mechanisms via relationship graphs
