@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/audibleblink/concurrent-writer"
+
 	"github.com/audibleblink/lpegopher/logerr"
 )
 
@@ -33,7 +34,6 @@ var (
 
 // InitOutputFiles initializes output files for data collection
 func InitOutputFiles() {
-
 	var (
 		f0, _ = os.OpenFile(ExeFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 		f1, _ = os.OpenFile(DllFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
@@ -57,8 +57,8 @@ func InitOutputFiles() {
 	}
 }
 
-// FlashAndClose flushes all writer buffers and closes files
-func FlashAndClose() {
+// FlushAndClose flushes all writer buffers and closes files
+func FlushAndClose() {
 	log := logerr.Add("cleanup")
 
 	defer f0.Close()
@@ -77,5 +77,4 @@ func FlashAndClose() {
 			continue
 		}
 	}
-
 }
