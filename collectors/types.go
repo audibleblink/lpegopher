@@ -7,29 +7,30 @@ import (
 	"os"
 	"strings"
 
-	"github.com/audibleblink/lpegopher/util"
 	"github.com/minio/highwayhash"
+
+	"github.com/audibleblink/lpegopher/util"
 )
 
 // Constants for relationship types
 const (
-	WriteOwner     = "WRITE_OWNER"     // Permission to change the owner of an object
-	WriteDACL      = "WRITE_DACL"      // Permission to modify the discretionary access control list
-	GenericAll     = "GENERIC_ALL"     // Full control permission
-	GenericWrite   = "GENERIC_WRITE"   // Write permission
-	ControlAccess  = "CONTROL_ACCESS"  // Right to control access to an object
-	Owns           = "OWNS"            // Ownership relationship
+	WriteOwner    = "WRITE_OWNER"    // Permission to change the owner of an object
+	WriteDACL     = "WRITE_DACL"     // Permission to modify the discretionary access control list
+	GenericAll    = "GENERIC_ALL"    // Full control permission
+	GenericWrite  = "GENERIC_WRITE"  // Write permission
+	ControlAccess = "CONTROL_ACCESS" // Right to control access to an object
+	Owns          = "OWNS"           // Ownership relationship
 
-	HostsPEFor     = "HOSTS_PE_FOR"    // Host-PE relationship
-	Contains       = "CONTAINS"        // Container relationship
-	ExecutedBy     = "EXECUTED_BY"     // Execution relationship
-	RunsAs         = "RUNS_AS"         // Execution context relationship
+	HostsPEFor = "HOSTS_PE_FOR" // Host-PE relationship
+	Contains   = "CONTAINS"     // Container relationship
+	ExecutedBy = "EXECUTED_BY"  // Execution relationship
+	RunsAs     = "RUNS_AS"      // Execution context relationship
 
-	Imports        = "IMPORTS"         // Import relationship
-	Forwards       = "FORWARDS"        // Forwarding relationship
-	ImportedBy     = "IMPORTED_BY"     // Reverse import relationship
+	Imports    = "IMPORTS"     // Import relationship
+	Forwards   = "FORWARDS"    // Forwarding relationship
+	ImportedBy = "IMPORTED_BY" // Reverse import relationship
 
-	Null           = "NULL"            // Null or empty value
+	Null = "NULL" // Null or empty value
 )
 
 // INode contains the parsed import and exports of a node
@@ -60,7 +61,10 @@ func (i INode) Write(file io.Writer) string {
 	csv := i.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, i.Path)
 	if !cacheHit {
-		io.WriteString(file, csv)
+		_, err := io.WriteString(file, csv)
+		if err != nil {
+			return ""
+		}
 	}
 	return id
 }
@@ -133,7 +137,10 @@ func (p Principal) Write(file io.Writer) string {
 	id, csv := p.ID(), p.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, p.Name)
 	if !cacheHit {
-		io.WriteString(file, csv)
+		_, err := io.WriteString(file, csv)
+		if err != nil {
+			return ""
+		}
 	}
 	return id
 }
