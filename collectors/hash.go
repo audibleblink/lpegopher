@@ -30,7 +30,7 @@ func NewHighwayHasher(key []byte, normalize bool) *HighwayHasher {
 		key:       key,
 		normalize: normalize,
 		hashPool: &sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				h, err := highwayhash.New(key)
 				if err != nil {
 					// This is a rare case that would only happen with an invalid key
@@ -68,12 +68,8 @@ func (h *HighwayHasher) HashString(data string, normalize bool) (string, error) 
 		return "", fmt.Errorf("hash write failed: %w", err)
 	}
 
-	// Pre-allocate the checksum slice to avoid allocation
 	// The HighwayHash output size is 32 bytes
-	checksum := make([]byte, 0, 32)
-
-	// Get the checksum and encode to hex string - this will reuse the pre-allocated slice
-	checksum = hash.Sum(checksum)
+	checksum := hash.Sum(nil)
 	return hex.EncodeToString(checksum), nil
 }
 

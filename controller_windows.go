@@ -1,16 +1,18 @@
 package main
 
 import (
-	"io/ioutil"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/alexflint/go-arg"
 	"github.com/audibleblink/getsystem"
+	"github.com/audibleblink/memutils"
+
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/collectors"
 	"github.com/audibleblink/lpegopher/logerr"
-	"github.com/audibleblink/memutils"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
@@ -24,7 +26,7 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 
 	var wg sync.WaitGroup
 
-	files, err := ioutil.ReadDir(args.Collect.Root)
+	files, err := os.ReadDir(args.Collect.Root)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -72,11 +74,17 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 
 	wg.Wait()
 	log.Info("flushing buffers and closing files")
-	collectors.FlashAndClose()
+	collectors.FlushAndClose()
 	log.Info("collection complete")
-	log.Warn("=============================================================================================")
-	log.Warn("don't forget to upload/move *.csv to neo4j's `import` directory before running postprocessing")
-	log.Warn("=============================================================================================")
+	log.Warn(
+		"=============================================================================================",
+	)
+	log.Warn(
+		"don't forget to upload/move *.csv to neo4j's `import` directory before running postprocessing",
+	)
+	log.Warn(
+		"=============================================================================================",
+	)
 	return
 }
 
