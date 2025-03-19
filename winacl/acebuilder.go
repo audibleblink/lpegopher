@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 )
 
-// NewAce is a constructor that will parse out an Ace from a byte buffer
+// NewAce creates a new ACE from a byte buffer
 func NewAce(buf *bytes.Buffer) (ACE, error) {
 	ace := ACE{}
 	var err error
@@ -34,7 +34,7 @@ func NewAce(buf *bytes.Buffer) (ACE, error) {
 	return ace, err
 }
 
-// NewACEHeader is a constructor that will parse out an ACEHeader from a byte buffer
+// NewACEHeader creates a new ACE header from a byte buffer
 func NewACEHeader(buf *bytes.Buffer) (header ACEHeader, err error) {
 	err = binary.Read(buf, binary.LittleEndian, &header.Type)
 	if err != nil {
@@ -51,7 +51,7 @@ func NewACEHeader(buf *bytes.Buffer) (header ACEHeader, err error) {
 	return
 }
 
-// NewBasicAce is a constructor that will parse out an Basic from a byte buffer
+// NewBasicAce creates a new basic ACE from a byte buffer
 func NewBasicAce(buf *bytes.Buffer, totalSize uint16) (BasicAce, error) {
 	oa := BasicAce{}
 	sid, err := NewSID(buf, int(totalSize-8))
@@ -62,7 +62,7 @@ func NewBasicAce(buf *bytes.Buffer, totalSize uint16) (BasicAce, error) {
 	return oa, err
 }
 
-// NewAdvancedAce is a constructor that will parse out an AdvancedAce from a byte buffer
+// NewAdvancedAce creates a new advanced ACE from a byte buffer
 func NewAdvancedAce(buf *bytes.Buffer, totalSize uint16) (AdvancedAce, error) {
 	oa := AdvancedAce{}
 	var err error

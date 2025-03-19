@@ -10,8 +10,10 @@ import (
 	"github.com/fatih/color"
 )
 
+// LogLevel represents the level of logging verbosity
 type LogLevel int
 
+// Log level constants
 const (
 	LogLevelDebug LogLevel = iota
 	LogLevelInfo
@@ -36,7 +38,7 @@ var labelColors map[LogLevel]*color.Color = map[LogLevel]*color.Color{
 	LogLevelFatal: color.New(color.BgRed),
 }
 
-// Logger is logger
+// Logger provides structured logging capabilities
 type Logger struct {
 
 	// Level dictates the LogLevel
@@ -63,6 +65,7 @@ type Logger struct {
 
 var G = DefaultLogger()
 
+// Global logger functions
 func Debug(s string)                       { G.Debug(s) }
 func Debugf(s string, vals ...interface{}) { G.Debugf(s, vals) }
 

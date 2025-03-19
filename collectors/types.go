@@ -11,27 +11,28 @@ import (
 	"github.com/minio/highwayhash"
 )
 
+// Constants for relationship types
 const (
-	WriteOwner    = "WRITE_OWNER"
-	WriteDACL     = "WRITE_DACL"
-	GenericAll    = "GENERIC_ALL"
-	GenericWrite  = "GENERIC_WRITE"
-	ControlAccess = "CONTROL_ACCESS"
-	Owns          = "OWNS"
+	WriteOwner     = "WRITE_OWNER"     // Permission to change the owner of an object
+	WriteDACL      = "WRITE_DACL"      // Permission to modify the discretionary access control list
+	GenericAll     = "GENERIC_ALL"     // Full control permission
+	GenericWrite   = "GENERIC_WRITE"   // Write permission
+	ControlAccess  = "CONTROL_ACCESS"  // Right to control access to an object
+	Owns           = "OWNS"            // Ownership relationship
 
-	HostsPEFor = "HOSTS_PE_FOR"
-	Contains   = "CONTAINS"
-	ExecutedBy = "EXECUTED_BY"
-	RunsAs     = "RUNS_AS"
+	HostsPEFor     = "HOSTS_PE_FOR"    // Host-PE relationship
+	Contains       = "CONTAINS"        // Container relationship
+	ExecutedBy     = "EXECUTED_BY"     // Execution relationship
+	RunsAs         = "RUNS_AS"         // Execution context relationship
 
-	Imports    = "IMPORTS"
-	Forwards   = "FORWARDS"
-	ImportedBy = "IMPORTED_BY"
+	Imports        = "IMPORTS"         // Import relationship
+	Forwards       = "FORWARDS"        // Forwarding relationship
+	ImportedBy     = "IMPORTED_BY"     // Reverse import relationship
 
-	Null = "NULL"
+	Null           = "NULL"            // Null or empty value
 )
 
-// INode contains the parsed import and exports of the INode
+// INode contains the parsed import and exports of a node
 type INode struct {
 	Name     string `json:"Name"`
 	Path     string `json:"Path"`
@@ -44,6 +45,7 @@ type INode struct {
 	id string
 }
 
+// ID returns the unique identifier for an INode
 func (i INode) ID() string {
 	if i.id != "" {
 		return i.id
@@ -52,6 +54,7 @@ func (i INode) ID() string {
 	return i.id
 }
 
+// Write outputs the INode data to the provided writer and returns its ID
 func (i INode) Write(file io.Writer) string {
 	id := i.ID()
 	csv := i.ToCSV()
@@ -62,6 +65,7 @@ func (i INode) Write(file io.Writer) string {
 	return id
 }
 
+// ToCSV converts the INode to a CSV formatted string
 func (i INode) ToCSV() string {
 	o := Null
 	g := Null
@@ -83,18 +87,20 @@ func (i INode) ToCSV() string {
 	return row
 }
 
+// DACL represents a Discretionary Access Control List
 type DACL struct {
 	Owner *Principal    `json:"Owner"`
 	Group *Principal    `json:"Group"`
 	Aces  []ReadableAce `json:"Aces"`
 }
 
+// ReadableAce represents a readable access control entry
 type ReadableAce struct {
 	Principal *Principal `json:"Principal"`
 	Rights    []string   `json:"Rights"`
 }
 
-// Principal represents Users or Groups
+// Principal represents Users or Groups in access control
 type Principal struct {
 	Name  string `json:"Name"`
 	Group string `json:"Group"`
@@ -102,6 +108,7 @@ type Principal struct {
 	id    string
 }
 
+// ID returns the unique identifier for a Principal
 func (p Principal) ID() string {
 	if p.id != "" {
 		return p.id
@@ -110,6 +117,7 @@ func (p Principal) ID() string {
 	return p.id
 }
 
+// ToCSV converts the Principal to a CSV formatted string
 func (p Principal) ToCSV() string {
 	fields := make([]string, 6)
 	fields[0] = p.ID()
@@ -120,6 +128,7 @@ func (p Principal) ToCSV() string {
 	return row
 }
 
+// Write outputs the Principal data to the provided writer and returns its ID
 func (p Principal) Write(file io.Writer) string {
 	id, csv := p.ID(), p.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, p.Name)
@@ -129,6 +138,7 @@ func (p Principal) Write(file io.Writer) string {
 	return id
 }
 
+// Rel represents a relationship between two entities
 type Rel struct {
 	Start string
 	Rel   string
@@ -137,10 +147,12 @@ type Rel struct {
 	id string
 }
 
+// ToCSV converts the relationship to a CSV formatted string
 func (r Rel) ToCSV() string {
 	return fmt.Sprintf("%s,%s,%s\n", r.Start, r.Rel, r.End)
 }
 
+// ID returns the unique identifier for a relationship
 func (r Rel) ID() string {
 	if r.id != "" {
 		return r.id
@@ -149,6 +161,7 @@ func (r Rel) ID() string {
 	return r.id
 }
 
+// Write outputs the relationship data to the provided writer and returns its ID
 func (r Rel) Write(file io.Writer) string {
 	id, csv := r.ID(), r.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, csv)
@@ -158,11 +171,13 @@ func (r Rel) Write(file io.Writer) string {
 	return id
 }
 
+// Dep represents a dependency with a name
 type Dep struct {
 	Name string `json:"Name"`
 	id   string
 }
 
+// ID returns the unique identifier for a dependency
 func (d Dep) ID() string {
 	if d.id != "" {
 		return d.id
@@ -171,10 +186,12 @@ func (d Dep) ID() string {
 	return d.id
 }
 
+// ToCSV converts the dependency to a CSV formatted string
 func (d Dep) ToCSV() string {
 	return fmt.Sprintf("%s,%s\n", d.ID(), d.Name)
 }
 
+// Write outputs the dependency data to the provided writer and returns its ID
 func (i Dep) Write(file io.Writer) string {
 	id, csv := i.ID(), i.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, i.Name)
@@ -184,6 +201,7 @@ func (i Dep) Write(file io.Writer) string {
 	return id
 }
 
+// PERunner represents an executable runner such as a service or scheduled task
 type PERunner struct {
 	Name     string     `json:"Name"`
 	Type     string     `json:"Type"`
@@ -195,6 +213,7 @@ type PERunner struct {
 	id string
 }
 
+// ID returns the unique identifier for a PERunner
 func (r PERunner) ID() string {
 	if r.id != "" {
 		return r.id
@@ -203,6 +222,7 @@ func (r PERunner) ID() string {
 	return r.id
 }
 
+// ToCSV converts the PERunner to a CSV formatted string
 func (r PERunner) ToCSV() string {
 	fields := make([]string, 8)
 	fields[0] = r.ID()
@@ -217,6 +237,7 @@ func (r PERunner) ToCSV() string {
 	return row
 }
 
+// Write outputs the PERunner data to the provided writer and returns its ID
 func (r PERunner) Write(file io.Writer) string {
 	id, csv := r.ID(), r.ToCSV()
 	_, cacheHit := cache.LoadOrStore(id, r.Name)

@@ -1,7 +1,9 @@
 package args
 
+// Args holds the parsed command line arguments
 var Args ArgType
 
+// ArgType represents the structure of command line arguments
 type ArgType struct {
 	GetSystem *getSystemCmd `arg:"subcommand" help:"Utility for acquiring SYSTEM before collection"`
 	Collect   *collectCmd   `arg:"subcommand" help:"Collect Windows PE and Runner data"`

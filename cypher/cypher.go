@@ -18,8 +18,10 @@ const (
 	SetProps   = `, %s.%s = '%s'`
 )
 
+// Driver is the Neo4j database driver instance
 var Driver neo4j.Driver
 
+// Query represents a cypher query builder
 type Query struct {
 	b *strings.Builder
 	d neo4j.Driver
@@ -43,6 +45,7 @@ func InitDriver(host, user, passwd string) (err error) {
 	return
 }
 
+// NewQuery creates a new cypher query instance
 func NewQuery() (*Query, error) {
 	log := logerr.Add("neo4j query")
 
@@ -57,14 +60,17 @@ func NewQuery() (*Query, error) {
 	}, nil
 }
 
+// Merge creates a MERGE clause in the query
 func (q *Query) Merge(varr, label, uniqProp, value string) *Query {
 	return q.getAction(MergeTmpl, varr, label, uniqProp, value)
 }
 
+// Create creates a CREATE clause in the query
 func (q *Query) Create(varr, label, uniqProp, value string) *Query {
 	return q.getAction(CreateTmpl, varr, label, uniqProp, value)
 }
 
+// Match creates a MATCH clause in the query
 func (q *Query) Match(varr, label, uniqProp, value string) *Query {
 	return q.getAction(MatchTmpl, varr, label, uniqProp, value)
 }
@@ -76,28 +82,34 @@ func (q *Query) getAction(template, varr, label, uniqProp, value string) *Query 
 	return q
 }
 
+// Append adds a string to the query
 func (q *Query) Append(query string) *Query {
 	q.b.WriteString(query)
 	q.b.WriteString("\n")
 	return q
 }
 
+// With creates a WITH clause in the query
 func (q *Query) With(label string) *Query {
 	return q.Append(fmt.Sprintf("WITH %s", label))
 }
 
+// EndMerge completes a MERGE operation
 func (q *Query) EndMerge() *Query {
 	return q.Append("WITH count(*) as dummy")
 }
 
+// Return creates a RETURN clause in the query
 func (q *Query) Return() *Query {
 	return q.Append("RETURN count(*)")
 }
 
+// Terminate adds an empty string to terminate the query
 func (q *Query) Terminate() *Query {
 	return q.Append("")
 }
 
+// Set creates a SET clause in the query
 func (q *Query) Set(varr string, props map[string]string) *Query {
 	first := true
 	for key, value := range props {
@@ -113,11 +125,13 @@ func (q *Query) Set(varr string, props map[string]string) *Query {
 	return q
 }
 
+// Relate creates a relationship creation clause in the query
 func (q *Query) Relate(var1, rel, var2 string) *Query {
 	fmt.Fprintf(q.b, RelateTmpl, var1, rel, var2)
 	return q
 }
 
+// ExecuteW executes the query in write mode
 func (q *Query) ExecuteW() error {
 	sess := q.d.NewSession(neo4j.SessionConfig{})
 	_, err := sess.WriteTransaction(q.txWork)
@@ -127,17 +141,20 @@ func (q *Query) ExecuteW() error {
 	return nil
 }
 
+// Raw replaces the query with the provided string
 func (q *Query) Raw(query string) *Query {
 	q.b.Reset()
 	fmt.Fprint(q.b, query)
 	return q
 }
 
+// Reset clears the current query
 func (q *Query) Reset() *Query {
 	q.b.Reset()
 	return q
 }
 
+// String returns the query as a string
 func (q *Query) String() string {
 	return q.b.String()
 }
@@ -154,6 +171,7 @@ func (q *Query) txWork(tx neo4j.Transaction) (interface{}, error) {
 	return summary, nil
 }
 
+// Begin starts a new transaction
 func (q *Query) Begin() (neo4j.Transaction, error) {
 	sess := q.d.NewSession(neo4j.SessionConfig{})
 	return sess.BeginTransaction()

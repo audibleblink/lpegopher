@@ -16,6 +16,7 @@ func execString(query string) error {
 	return cypherQ.ExecuteW()
 }
 
+// InsertAllRunners loads runner data into the graph database
 func InsertAllRunners(stageURL string) (err error) {
 	log := logerr.Add("runner inserts")
 	query := `LOAD CSV FROM '%s/runners.csv' AS line
@@ -38,6 +39,7 @@ func InsertAllRunners(stageURL string) (err error) {
 	return
 }
 
+// BulkRelateRunners creates relationships between runners and other nodes
 func BulkRelateRunners() (err error) {
 	log := logerr.Add("runner relationships")
 

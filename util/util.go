@@ -18,10 +18,12 @@ const (
 
 var src = rand.NewSource(1337)
 
+// Lower converts a string to lowercase
 func Lower(str string) string {
 	return strings.ToLower(str)
 }
 
+// PathFix sanitizes path strings for use in the database
 func PathFix(str string) string {
 	str = strings.ReplaceAll(str, `"`, "")
 	str = resolveEnvPath(str)
@@ -66,7 +68,7 @@ func resolveEnvPath(path string) (out string) {
 	return val + remainder
 }
 
-// EvaluatePath will resolve any environment variables in a path string
+// EvaluatePath resolves environment variables in a path
 func EvaluatePath(path string) (out string) {
 	// https://gitlab.com/stu0292/windowspathenv
 	out = path
@@ -95,6 +97,7 @@ func EvaluatePath(path string) (out string) {
 	return val + remainder
 }
 
+// LineCount counts lines in a reader
 func LineCount(r io.Reader) (int, error) {
 	buffer := make([]byte, 32*1024)
 	lineSep := []byte{'\n'}
@@ -115,6 +118,7 @@ func LineCount(r io.Reader) (int, error) {
 	}
 }
 
+// Rand generates a random string
 func Rand() string {
 	size := 6
 	sb := strings.Builder{}
@@ -135,6 +139,7 @@ func Rand() string {
 	return sb.String()
 }
 
+// SmoothBrainPath splits a command line into executable and arguments
 func SmoothBrainPath(cmdline string) (bin, args string) {
 	if strings.HasPrefix(cmdline, `"`) {
 		quoteCharOffset := 1

@@ -9,15 +9,16 @@ import (
 	"github.com/audibleblink/lpegopher/logerr"
 )
 
+// Constants for file paths used for outputs
 const (
-	ExeFile       = "exes.csv"
-	DllFile       = "dlls.csv"
-	DirFile       = "dirs.csv"
-	PrincipalFile = "principals.csv"
-	RelsFile      = "relationships.csv"
-	DepsFile      = "deps.csv"
-	RunnersFile   = "runners.csv"
-	ImportFile    = "imports.csv"
+	ExeFile       = "exes.csv"          // Path to write executable file data
+	DllFile       = "dlls.csv"          // Path to write dynamic link library data
+	DirFile       = "dirs.csv"          // Path to write directory data
+	PrincipalFile = "principals.csv"    // Path to write security principal data
+	RelsFile      = "relationships.csv" // Path to write relationship data
+	DepsFile      = "deps.csv"          // Path to write dependency data
+	RunnersFile   = "runners.csv"       // Path to write auto-runner data
+	ImportFile    = "imports.csv"       // Path to write import relationship data
 )
 
 var (
@@ -30,6 +31,7 @@ var (
 	f0, f1, f2, f3, f4, f5, f6, f7 os.File
 )
 
+// InitOutputFiles initializes output files for data collection
 func InitOutputFiles() {
 
 	var (
@@ -55,6 +57,7 @@ func InitOutputFiles() {
 	}
 }
 
+// FlashAndClose flushes all writer buffers and closes files
 func FlashAndClose() {
 	log := logerr.Add("cleanup")
 

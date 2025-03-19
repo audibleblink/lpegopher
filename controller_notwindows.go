@@ -11,6 +11,7 @@ import (
 )
 
 func doCollectCmd(a args.ArgType, cli *arg.Parser) error {
+	_, _ = a, cli
 	return fmt.Errorf("collect functionality is only available on Windows")
 }
 

@@ -10,6 +10,7 @@ import (
 )
 
 func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
+	_ = cli
 	log := logerr.Add("postprocessing")
 
 	if args.Process.HTTP != "" {

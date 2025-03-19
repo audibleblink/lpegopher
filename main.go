@@ -11,9 +11,10 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
+// Global variables
 var (
-	argv = args.ArgType{}
-	cli  = arg.MustParse(&argv)
+	argv = args.ArgType{}       // Command line arguments
+	cli  = arg.MustParse(&argv) // Parsed command line
 )
 
 func init() {

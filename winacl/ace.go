@@ -11,6 +11,7 @@ import (
 // https://docs.microsoft.com/en-us/windows/win32/secauthz/access-control-entries
 type AceType byte
 
+// ACE type constants
 const (
 	AceTypeAccessAllowed AceType = iota
 	AceTypeAccessDenied
@@ -31,7 +32,7 @@ const (
 	AceTypeSystemAlarmCallbackObject
 )
 
-// ACETypeLookup maps AceTypes to a human-readable labels
+// ACETypeLookup maps ACE types to human-readable strings
 var ACETypeLookup = map[AceType]string{
 	AceTypeAccessAllowed:               "ACCESS_ALLOWED",
 	AceTypeAccessDenied:                "ACCESS_DENIED",
@@ -52,9 +53,10 @@ var ACETypeLookup = map[AceType]string{
 	AceTypeSystemAlarmCallbackObject:   "SYSTEM_ALARM_CALLBACK_OBJECT",
 }
 
-// AceHeadFlags is a type representing an ACEs header
+// ACEHeaderFlags represents the flags in an ACE header
 type ACEHeaderFlags byte
 
+// ACE header flag constants
 const (
 	ACEHeaderFlagsObjectInheritAce        ACEHeaderFlags = 0x01
 	ACEHeaderFlagsContainerInheritAce                    = 0x02
@@ -65,6 +67,7 @@ const (
 	ACEHeaderFlagsFailedAccessAceFlag                    = 0x80
 )
 
+// ACEHeaderFlagLookup maps ACE header flags to human-readable strings
 var ACEHeaderFlagLookup = map[ACEHeaderFlags]string{
 	ACEHeaderFlagsObjectInheritAce:        "OBJECT_INHERIT_ACE",
 	ACEHeaderFlagsContainerInheritAce:     "CONTAINER_INHERIT_ACE",
@@ -94,6 +97,7 @@ type ACEAccessMask struct {
 	value uint32
 }
 
+// Access mask constants for permissions
 const (
 	AccessMaskGenericRead    = 0x80000000
 	AccessMaskGenericWrite   = 0x40000000
@@ -119,7 +123,7 @@ const (
 	ADSRightDSCreateChild   = 0x00000001
 )
 
-// ACEAccessMaskLookup maps ACEAccessMasks to a human-readable labels
+// ACEAccessMaskLookup maps access masks to human-readable strings
 var ACEAccessMaskLookup = map[uint32]string{
 	AccessMaskGenericRead:    "GENERIC_READ",
 	AccessMaskGenericWrite:   "GENERIC_WRITE",
@@ -167,7 +171,7 @@ func (am ACEAccessMask) StringSlice() []string {
 	return readableRights
 }
 
-// ACE represents an ACE within an ACL
+// ACE represents an Access Control Entry
 type ACE struct {
 	//Header + AccessMask is 16 bytes
 	Header     ACEHeader
@@ -253,7 +257,7 @@ func (s BasicAce) GetPrincipal() SID {
 	return s.SecurityIdentifier
 }
 
-//AdvancedAce represents an Object Ace
+// AdvancedAce represents an Object Ace
 type AdvancedAce struct {
 	Flags               ACEInheritanceFlags //4 bytes
 	ObjectType          GUID                //16 bytes

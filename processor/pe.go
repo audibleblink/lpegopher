@@ -7,6 +7,7 @@ import (
 	"github.com/audibleblink/lpegopher/node"
 )
 
+// InsertAllNodes loads node data into the graph database
 func InsertAllNodes(stageURL string) (err error) {
 	log := logerr.Add("file inserts")
 
@@ -79,6 +80,7 @@ func InsertAllNodes(stageURL string) (err error) {
 	return
 }
 
+// BulkRelateFileTree creates relationships between files and directories
 func BulkRelateFileTree() (err error) {
 	log := logerr.Add("filetree relationships")
 	for _, typ := range []string{node.Dir, node.Exe, node.Dll} {
@@ -97,6 +99,7 @@ func BulkRelateFileTree() (err error) {
 	return
 }
 
+// RelateOwnership creates ownership relationships between principals and nodes
 func RelateOwnership() (err error) {
 	log := logerr.Add("ownership creation")
 	log.Debug("relating all (:Principal)-[:OWNS]-(:INode)")
@@ -116,6 +119,7 @@ func RelateOwnership() (err error) {
 	return
 }
 
+// RelateMembership creates group membership relationships between principals
 func RelateMembership() (err error) {
 	log := logerr.Add("membership creation")
 	log.Debug("relating all (:Principal)-[:MEMBER_OF]-(:Principal)")
@@ -135,6 +139,7 @@ func RelateMembership() (err error) {
 	return
 }
 
+// RelateACLs creates access control relationships between nodes
 func RelateACLs(stageURL string) (err error) {
 	log := logerr.Add("acl relationships")
 	log.Debug("relating all (:Principal)-[$ACE]-(:INodes)")
@@ -153,6 +158,7 @@ func RelateACLs(stageURL string) (err error) {
 	return
 }
 
+// RelateDependecies creates dependency relationships between nodes
 func RelateDependecies(stageURL string) (err error) {
 	log := logerr.Add("dependecy relationships")
 	log.Debug("relating (:INode)-[:IMPORTS]-(:Dep)")
