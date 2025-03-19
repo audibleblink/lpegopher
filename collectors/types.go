@@ -1,14 +1,10 @@
 package collectors
 
 import (
-	"encoding/hex"
 	"fmt"
 	"io"
 	"strings"
 
-	"github.com/minio/highwayhash"
-
-	"github.com/audibleblink/lpegopher/logerr"
 	"github.com/audibleblink/lpegopher/util"
 )
 
@@ -292,33 +288,4 @@ func (r PERunner) ToCSV() string {
 // Write outputs the PERunner data to the provided writer and returns its ID
 func (r PERunner) Write(file io.Writer) string {
 	return GenericWriteOp(r, file, r.CacheKey())
-}
-
-// hashFor generates a hash string for the given data after normalizing with PathFix
-// This is a more efficient implementation that writes directly to the hash
-func hashFor(data string) string {
-	// Normalize the data using PathFix
-	data = util.PathFix(data)
-	
-	// Create a new hash instance
-	hash, err := highwayhash.New(key)
-	if err != nil {
-		// Use logerr package instead of direct fmt.Printf and don't exit
-		// This could be enhanced further to return an error, but keeping signature compatible
-		log := logerr.Add("hash")
-		log.Errorf("Failed to create HighwayHash instance: %v", err)
-		return "" // Return empty string instead of crashing the program
-	}
-
-	// Write data directly to hash - much more efficient than using io.Copy and strings.NewReader
-	_, err = hash.Write([]byte(data))
-	if err != nil {
-		log := logerr.Add("hash")
-		log.Errorf("Hash write failed: %v", err)
-		return ""
-	}
-	
-	// Get the checksum and encode to hex string
-	checksum := hash.Sum(nil)
-	return hex.EncodeToString(checksum)
 }
