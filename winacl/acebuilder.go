@@ -14,7 +14,7 @@ func NewAce(buf *bytes.Buffer) (ACE, error) {
 	if err != nil {
 		return ace, err
 	}
-	err = binary.Read(buf, binary.LittleEndian, &ace.AccessMask.value)
+	err = binary.Read(buf, binary.LittleEndian, &ace.AccessMask.Value)
 	if err != nil {
 		return ace, err
 	}

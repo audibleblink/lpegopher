@@ -10,7 +10,7 @@ import (
 )
 
 func getTestDataDir() string {
-	return "../testdata"
+	return "./testdata"
 }
 
 func getTestNtsdBytes() ([]byte, error) {

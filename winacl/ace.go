@@ -94,7 +94,7 @@ var ACEInheritanceFlagsLookup = map[ACEInheritanceFlags]string{
 
 // ACEAccessMask represents an ACE's permissions
 type ACEAccessMask struct {
-	value uint32
+	Value uint32 // Changed from 'value' to 'Value' to make it exported
 }
 
 // Access mask constants for permissions
@@ -148,7 +148,7 @@ var ACEAccessMaskLookup = map[uint32]string{
 
 // Raw returns an ACEAccessMask's uint32 Access Mask
 func (am ACEAccessMask) Raw() uint32 {
-	return am.value
+	return am.Value // Updated to use the exported field name
 }
 
 // String returns an ACEAccessMask's human-readable Access Mask
@@ -161,7 +161,7 @@ func (am ACEAccessMask) String() string {
 // except as a slice of string
 func (am ACEAccessMask) StringSlice() []string {
 	var readableRights []string
-	rights, _ := bamflags.ParseInt(int64(am.value))
+	rights, _ := bamflags.ParseInt(int64(am.Value))
 
 	for _, right := range rights {
 		if perm := ACEAccessMaskLookup[uint32(right)]; perm != "" {
