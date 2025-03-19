@@ -4,13 +4,60 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/minio/highwayhash"
 
+	"github.com/audibleblink/lpegopher/logerr"
 	"github.com/audibleblink/lpegopher/util"
 )
+
+// Writer defines the interface for types that can be written to output streams
+type Writer interface {
+	// ID returns a unique identifier for the item
+	ID() string
+
+	// ToCSV converts the item to a CSV formatted string
+	ToCSV() string
+
+	// Write outputs the item to the given writer and returns its ID
+	Write(io.Writer) string
+}
+
+// KeyedWriter is a helper type for types that need caching by a specific key
+type KeyedWriter interface {
+	Writer
+	// CacheKey returns the key used for caching this item
+	CacheKey() string
+}
+
+// GenericWriteOp is a generic function that handles the common Write pattern
+// for all collector types. T must implement the Writer interface.
+func GenericWriteOp[T Writer](item T, file io.Writer, cacheKey string) string {
+	id, csv := item.ID(), item.ToCSV()
+	_, cacheHit := cache.LoadOrStore(id, cacheKey)
+	if !cacheHit {
+		_, err := io.WriteString(file, csv)
+		if err != nil {
+			return ""
+		}
+	}
+	return id
+}
+
+// WriteToFile is a convenience function for types that implement KeyedWriter
+func WriteToFile[T KeyedWriter](item T, file io.Writer) string {
+	return GenericWriteOp(item, file, item.CacheKey())
+}
+
+// WriteItems is a generic function to write a batch of items
+func WriteItems[T KeyedWriter](items []T, file io.Writer) []string {
+	ids := make([]string, len(items))
+	for i, item := range items {
+		ids[i] = WriteToFile(item, file)
+	}
+	return ids
+}
 
 // Constants for relationship types
 const (
@@ -55,18 +102,14 @@ func (i INode) ID() string {
 	return i.id
 }
 
+// CacheKey returns the key to use for caching an INode
+func (i INode) CacheKey() string {
+	return i.Path
+}
+
 // Write outputs the INode data to the provided writer and returns its ID
 func (i INode) Write(file io.Writer) string {
-	id := i.ID()
-	csv := i.ToCSV()
-	_, cacheHit := cache.LoadOrStore(id, i.Path)
-	if !cacheHit {
-		_, err := io.WriteString(file, csv)
-		if err != nil {
-			return ""
-		}
-	}
-	return id
+	return GenericWriteOp(i, file, i.CacheKey())
 }
 
 // ToCSV converts the INode to a CSV formatted string
@@ -121,6 +164,11 @@ func (p Principal) ID() string {
 	return p.id
 }
 
+// CacheKey returns the key to use for caching a Principal
+func (p Principal) CacheKey() string {
+	return p.Name
+}
+
 // ToCSV converts the Principal to a CSV formatted string
 func (p Principal) ToCSV() string {
 	fields := make([]string, 6)
@@ -134,15 +182,7 @@ func (p Principal) ToCSV() string {
 
 // Write outputs the Principal data to the provided writer and returns its ID
 func (p Principal) Write(file io.Writer) string {
-	id, csv := p.ID(), p.ToCSV()
-	_, cacheHit := cache.LoadOrStore(id, p.Name)
-	if !cacheHit {
-		_, err := io.WriteString(file, csv)
-		if err != nil {
-			return ""
-		}
-	}
-	return id
+	return GenericWriteOp(p, file, p.CacheKey())
 }
 
 // Rel represents a relationship between two entities
@@ -168,14 +208,14 @@ func (r Rel) ID() string {
 	return r.id
 }
 
+// CacheKey returns the key to use for caching a Rel
+func (r Rel) CacheKey() string {
+	return r.ToCSV()
+}
+
 // Write outputs the relationship data to the provided writer and returns its ID
 func (r Rel) Write(file io.Writer) string {
-	id, csv := r.ID(), r.ToCSV()
-	_, cacheHit := cache.LoadOrStore(id, csv)
-	if !cacheHit {
-		io.WriteString(file, csv)
-	}
-	return id
+	return GenericWriteOp(r, file, r.CacheKey())
 }
 
 // Dep represents a dependency with a name
@@ -193,19 +233,19 @@ func (d Dep) ID() string {
 	return d.id
 }
 
+// CacheKey returns the key to use for caching a Dep
+func (d Dep) CacheKey() string {
+	return d.Name
+}
+
 // ToCSV converts the dependency to a CSV formatted string
 func (d Dep) ToCSV() string {
 	return fmt.Sprintf("%s,%s\n", d.ID(), d.Name)
 }
 
 // Write outputs the dependency data to the provided writer and returns its ID
-func (i Dep) Write(file io.Writer) string {
-	id, csv := i.ID(), i.ToCSV()
-	_, cacheHit := cache.LoadOrStore(id, i.Name)
-	if !cacheHit {
-		io.WriteString(file, csv)
-	}
-	return id
+func (d Dep) Write(file io.Writer) string {
+	return GenericWriteOp(d, file, d.CacheKey())
 }
 
 // PERunner represents an executable runner such as a service or scheduled task
@@ -229,6 +269,11 @@ func (r PERunner) ID() string {
 	return r.id
 }
 
+// CacheKey returns the key to use for caching a PERunner
+func (r PERunner) CacheKey() string {
+	return r.Name
+}
+
 // ToCSV converts the PERunner to a CSV formatted string
 func (r PERunner) ToCSV() string {
 	fields := make([]string, 8)
@@ -246,28 +291,34 @@ func (r PERunner) ToCSV() string {
 
 // Write outputs the PERunner data to the provided writer and returns its ID
 func (r PERunner) Write(file io.Writer) string {
-	id, csv := r.ID(), r.ToCSV()
-	_, cacheHit := cache.LoadOrStore(id, r.Name)
-	if !cacheHit {
-		io.WriteString(file, csv)
-	}
-	return id
+	return GenericWriteOp(r, file, r.CacheKey())
 }
 
+// hashFor generates a hash string for the given data after normalizing with PathFix
+// This is a more efficient implementation that writes directly to the hash
 func hashFor(data string) string {
+	// Normalize the data using PathFix
 	data = util.PathFix(data)
+	
+	// Create a new hash instance
 	hash, err := highwayhash.New(key)
 	if err != nil {
-		fmt.Printf("Failed to create HighwayHash instance: %v", err)
-		os.Exit(1)
+		// Use logerr package instead of direct fmt.Printf and don't exit
+		// This could be enhanced further to return an error, but keeping signature compatible
+		log := logerr.Add("hash")
+		log.Errorf("Failed to create HighwayHash instance: %v", err)
+		return "" // Return empty string instead of crashing the program
 	}
 
-	txt := strings.NewReader(data)
-	if _, err = io.Copy(hash, txt); err != nil {
-		fmt.Printf("hash reader creation failed: %v", err)
-		os.Exit(1)
+	// Write data directly to hash - much more efficient than using io.Copy and strings.NewReader
+	_, err = hash.Write([]byte(data))
+	if err != nil {
+		log := logerr.Add("hash")
+		log.Errorf("Hash write failed: %v", err)
+		return ""
 	}
-
+	
+	// Get the checksum and encode to hex string
 	checksum := hash.Sum(nil)
 	return hex.EncodeToString(checksum)
 }

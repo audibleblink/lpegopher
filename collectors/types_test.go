@@ -31,6 +31,13 @@ func TestINodeMethods(t *testing.T) {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
 		}
 	})
+	
+	t.Run("CacheKey returns the correct value", func(t *testing.T) {
+		cacheKey := inode.CacheKey()
+		if cacheKey != "/path/to/test.exe" {
+			t.Errorf("Expected CacheKey to be '/path/to/test.exe', got '%s'", cacheKey)
+		}
+	})
 
 	t.Run("ToCSV formats correctly", func(t *testing.T) {
 		csv := inode.ToCSV()
@@ -86,6 +93,13 @@ func TestPrincipalMethods(t *testing.T) {
 
 		if id1 != id2 {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
+		}
+	})
+	
+	t.Run("CacheKey returns the correct value", func(t *testing.T) {
+		cacheKey := principal.CacheKey()
+		if cacheKey != "TestUser" {
+			t.Errorf("Expected CacheKey to be 'TestUser', got '%s'", cacheKey)
 		}
 	})
 
@@ -161,6 +175,14 @@ func TestRelMethods(t *testing.T) {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
 		}
 	})
+	
+	t.Run("CacheKey returns the correct value", func(t *testing.T) {
+		cacheKey := rel.CacheKey()
+		expectedCSV := "start123,CONTAINS,end456\n"
+		if cacheKey != expectedCSV {
+			t.Errorf("Expected CacheKey to be '%s', got '%s'", expectedCSV, cacheKey)
+		}
+	})
 
 	t.Run("ToCSV formats correctly", func(t *testing.T) {
 		csv := rel.ToCSV()
@@ -218,6 +240,13 @@ func TestDepMethods(t *testing.T) {
 
 		if id1 != id2 {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
+		}
+	})
+	
+	t.Run("CacheKey returns the correct value", func(t *testing.T) {
+		cacheKey := dep.CacheKey()
+		if cacheKey != "kernel32.dll" {
+			t.Errorf("Expected CacheKey to be 'kernel32.dll', got '%s'", cacheKey)
 		}
 	})
 
@@ -286,6 +315,13 @@ func TestPERunnerMethods(t *testing.T) {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
 		}
 	})
+	
+	t.Run("CacheKey returns the correct value", func(t *testing.T) {
+		cacheKey := peRunner.CacheKey()
+		if cacheKey != "TestService" {
+			t.Errorf("Expected CacheKey to be 'TestService', got '%s'", cacheKey)
+		}
+	})
 
 	t.Run("ToCSV formats correctly", func(t *testing.T) {
 		csv := peRunner.ToCSV()
@@ -325,6 +361,51 @@ func TestPERunnerMethods(t *testing.T) {
 			t.Error("Write should output data to the buffer")
 		}
 	})
+}
+
+func TestWriteItems(t *testing.T) {
+	// Create multiple principals
+	principals := []Principal{
+		{Name: "SYSTEM", Group: "NT AUTHORITY", Type: "user"},
+		{Name: "Administrator", Group: "BUILTIN", Type: "user"},
+		{Name: "Users", Group: "BUILTIN", Type: "group"},
+	}
+	
+	// Test WriteItems
+	var buf bytes.Buffer
+	ids := WriteItems(principals, &buf)
+	
+	// Check that IDs are returned
+	if len(ids) != len(principals) {
+		t.Errorf("Expected %d IDs, got %d", len(principals), len(ids))
+	}
+	
+	for _, id := range ids {
+		if id == "" {
+			t.Error("Expected non-empty ID to be returned")
+		}
+	}
+	
+	// Check that some data was written
+	if buf.Len() == 0 {
+		t.Error("Expected data to be written to buffer")
+	}
+	
+	// Test writing again - should be cached
+	buf.Reset()
+	ids2 := WriteItems(principals, &buf)
+	
+	// IDs should be the same
+	for i, id := range ids {
+		if id != ids2[i] {
+			t.Errorf("Expected same ID to be returned on second write, got %s != %s", id, ids2[i])
+		}
+	}
+	
+	// Buffer should be empty as items were cached
+	if buf.Len() > 0 {
+		t.Error("Expected no data to be written for cached items")
+	}
 }
 
 func TestHashFor(t *testing.T) {
