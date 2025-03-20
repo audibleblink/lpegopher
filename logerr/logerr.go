@@ -147,7 +147,8 @@ func (l *Logger) formatLogMessage(level LogLevel, msg string) string {
 // log outputs a message if it should be logged based on level
 func (l *Logger) log(level LogLevel, msg string) {
 	if l.shouldLog(level) {
-		fmt.Fprintln(l.Output, msg)
+		formatted := l.formatLogMessage(level, msg)
+		fmt.Fprintln(l.Output, formatted)
 	}
 }
 
