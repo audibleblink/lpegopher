@@ -8,6 +8,7 @@ import (
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/cypher"
 	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/lpegopher/node"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
@@ -99,26 +100,21 @@ func dbCreateIndices() error {
 	defer tx.Rollback()
 
 	log.Debug("creating indices")
-	iq := "CREATE CONSTRAINT ON (a:%s) ASSERT a.%s IS UNIQUE;"
-	tx.Run(fmt.Sprintf(iq, "INode", "nid"), nil)
-	tx.Run(fmt.Sprintf(iq, "Principal", "nid"), nil)
-	tx.Run(fmt.Sprintf(iq, "Runner", "nid"), nil)
-	tx.Run(fmt.Sprintf(iq, "Dep", "nid"), nil)
-	tx.Run(fmt.Sprintf(iq, "Exe", "path"), nil)
-	tx.Run(fmt.Sprintf(iq, "Dll", "path"), nil)
-	tx.Run(fmt.Sprintf(iq, "Directory", "path"), nil)
-
-	bq := "CREATE BTREE INDEX FOR (n:%s) ON (n.%s)"
-	tx.Run(fmt.Sprintf(bq, "INode", "owner"), nil)
-	tx.Run(fmt.Sprintf(bq, "INode", "group"), nil)
-	tx.Run(fmt.Sprintf(bq, "Exe", "parent"), nil)
-	tx.Run(fmt.Sprintf(bq, "Dll", "parent"), nil)
-	tx.Run(fmt.Sprintf(bq, "Directory", "parent"), nil)
-	tx.Run(fmt.Sprintf(bq, "INode", "name"), nil)
-	tx.Run(fmt.Sprintf(bq, "Runner", "parent"), nil)
-	tx.Run(fmt.Sprintf(bq, "Runner", "exe"), nil)
-	tx.Run(fmt.Sprintf(bq, "Runner", "context"), nil)
-	tx.Run(fmt.Sprintf(bq, "Principal", "name"), nil)
+	
+	// Use the node package to create all schema constraints and indices
+	nodeSchema := node.NewNodeSchema(tx)
+	
+	// Create unique constraints
+	log.Debug("creating unique constraints")
+	if err := nodeSchema.CreateUniqueConstraints(); err != nil {
+		return log.Wrap(err)
+	}
+	
+	// Create btree indices
+	log.Debug("creating btree indices")
+	if err := nodeSchema.CreateBTreeIndices(); err != nil {
+		return log.Wrap(err)
+	}
 
 	err = tx.Commit()
 	if err != nil {

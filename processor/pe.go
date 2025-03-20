@@ -10,139 +10,98 @@ import (
 // InsertAllNodes loads node data into the graph database
 func InsertAllNodes(stageURL string) (err error) {
 	log := logerr.Add("file inserts")
+	urlPrefix := dataPrefix(stageURL)
 
+	// Process exes
 	log.Debug("processing exes")
-	query := `LOAD CSV FROM '%s/exes.csv' AS line
-		WITH line
-		CREATE (:Exe:INode {
-			nid: line[0], 
-			name: line[1],
-			path: line[2],
-			parent: line[3],
-			owner: line[4],
-			group: line[5] })`
-
-	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
+	template, _ := node.GetTemplateForNodeType(node.Exe)
+	err = execString(fmt.Sprintf(template, urlPrefix))
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
+
+	// Process dlls
 	log.Debug("processing dlls")
-	query = `LOAD CSV FROM '%s/dlls.csv' AS line
-		WITH line
-		CREATE (:Dll:INode {
-			nid: line[0], 
-			name: line[1],
-			path: line[2],
-			parent: line[3],
-			owner: line[4],
-			group: line[5] })`
-	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
+	template, _ = node.GetTemplateForNodeType(node.Dll)
+	err = execString(fmt.Sprintf(template, urlPrefix))
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
 
+	// Process dirs
 	log.Debug("processing dirs")
-	query = `LOAD CSV FROM '%s/dirs.csv' AS line
-		WITH line
-		CREATE (:Directory:INode {
-			nid: line[0], 
-			name: line[1],
-			path: line[2],
-			parent: line[3],
-			owner: line[4],
-			group: line[5] })`
-	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
+	template, _ = node.GetTemplateForNodeType(node.Dir)
+	err = execString(fmt.Sprintf(template, urlPrefix))
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
 
+	// Process deps
 	log.Debug("processing forwards")
-	query = `LOAD CSV FROM '%s/deps.csv' AS line
-		WITH line CREATE (:Dep {nid: line[0], name: line[1]})`
-	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
+	template, _ = node.GetTemplateForNodeType(node.Dep)
+	err = execString(fmt.Sprintf(template, urlPrefix))
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
 
+	// Process principals
 	log.Debug("processing principals")
-	query = `LOAD CSV FROM '%s/principals.csv' AS line
-		WITH line CREATE (:Principal {nid: line[0], name: line[1], group: line[2]})`
-	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
+	template, _ = node.GetTemplateForNodeType(node.Principal)
+	err = execString(fmt.Sprintf(template, urlPrefix))
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
 
-	return
+	return nil
 }
 
 // BulkRelateFileTree creates relationships between files and directories
 func BulkRelateFileTree() (err error) {
 	log := logerr.Add("filetree relationships")
+	template, _ := node.GetRelationshipTemplate(node.Contains)
+	
 	for _, typ := range []string{node.Dir, node.Exe, node.Dll} {
-		log.Debugf("relating all (:Dir)-[:CONTAINS]-(:%s)", typ)
-		err = execString(fmt.Sprintf(`
-			CALL apoc.periodic.iterate(
-				"MATCH (node:%s),(dir:Directory) WHERE node.parent = dir.path RETURN node,dir",
-				"MERGE (dir)-[:CONTAINS]->(node)",
-				{batchSize:1000})
-			`, typ))
+		log.Debugf("relating all (:Dir)-[:%s]-(:%s)", node.Contains, typ)
+		err = execString(fmt.Sprintf(template, typ))
 		if err != nil {
-			err = log.Wrap(err)
-			return
+			return log.Wrap(err)
 		}
 	}
-	return
+	return nil
 }
 
 // RelateOwnership creates ownership relationships between principals and nodes
 func RelateOwnership() (err error) {
 	log := logerr.Add("ownership creation")
-	log.Debug("relating all (:Principal)-[:OWNS]-(:INode)")
-	err = execString(`
-			CALL apoc.periodic.iterate("
-				MATCH (pcpl:Principal),(inode:INode) 
-				WHERE pcpl.nid = inode.owner or pcpl.nid = inode.group 
-				RETURN pcpl, inode
-			","
-				MERGE (pcpl)-[:OWNS]->(inode)
-			", {batchSize: 1000})
-			`)
+	log.Debugf("relating all (:Principal)-[:%s]-(:INode)", node.Owns)
+	
+	template, _ := node.GetRelationshipTemplate(node.Owns)
+	err = execString(template)
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
-	return
+	return nil
 }
 
 // RelateMembership creates group membership relationships between principals
 func RelateMembership() (err error) {
 	log := logerr.Add("membership creation")
-	log.Debug("relating all (:Principal)-[:MEMBER_OF]-(:Principal)")
-	err = execString(`
-			CALL apoc.periodic.iterate("
-				MATCH (group:Principal),(user:Principal) 
-				WHERE user.group = group.name 
-				RETURN user, group
-			","
-				MERGE (user)-[:MEMBER_OF]->(group)
-			", {batchSize: 10})
-			`)
+	log.Debugf("relating all (:Principal)-[:%s]-(:Principal)", node.MemberOf)
+	
+	template, _ := node.GetRelationshipTemplate(node.MemberOf)
+	err = execString(template)
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
-	return
+	return nil
 }
 
 // RelateACLs creates access control relationships between nodes
 func RelateACLs(stageURL string) (err error) {
 	log := logerr.Add("acl relationships")
 	log.Debug("relating all (:Principal)-[$ACE]-(:INodes)")
+	
+	// ACL relationships are custom and don't use a specific relationship type
 	query := `CALL apoc.periodic.iterate("
 			LOAD CSV FROM '%s/relationships.csv' AS line RETURN line
 		","
@@ -152,27 +111,20 @@ func RelateACLs(stageURL string) (err error) {
 		`
 	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
-	return
+	return nil
 }
 
 // RelateDependecies creates dependency relationships between nodes
 func RelateDependecies(stageURL string) (err error) {
 	log := logerr.Add("dependecy relationships")
-	log.Debug("relating (:INode)-[:IMPORTS]-(:Dep)")
-	query := `CALL apoc.periodic.iterate("
-			LOAD CSV FROM '%s/imports.csv' AS line RETURN line
-		","
-			MATCH (a:INode {nid: line[0]}), (b:Dep {nid: line[2]})
-			MERGE (b)-[:IMPORTED_BY]->(a)
-		", {batchSize: 20000});
-		`
-	err = execString(fmt.Sprintf(query, dataPrefix(stageURL)))
+	log.Debugf("relating (:INode)-[:%s]-(:Dep)", node.ImportedBy)
+	
+	template, _ := node.GetRelationshipTemplate(node.ImportedBy)
+	err = execString(fmt.Sprintf(template, dataPrefix(stageURL)))
 	if err != nil {
-		err = log.Wrap(err)
-		return
+		return log.Wrap(err)
 	}
-	return
+	return nil
 }

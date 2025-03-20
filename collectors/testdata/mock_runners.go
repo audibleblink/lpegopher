@@ -1,4 +1,4 @@
-package test_files
+package testdata
 
 import (
 	"github.com/audibleblink/lpegopher/collectors"
@@ -8,10 +8,10 @@ import (
 func MockRunnerGenerator() []collectors.PERunner {
 	// Mock Principal for the context
 	systemPrincipal := &collectors.Principal{
-		Name:  "SYSTEM",
-		Type:  "user",
+		Name: "SYSTEM",
+		Type: "user",
 	}
-	
+
 	// Mock INode for the executable
 	testExe := &collectors.INode{
 		Name:   "test.exe",
@@ -19,7 +19,7 @@ func MockRunnerGenerator() []collectors.PERunner {
 		Parent: "C:/Windows/System32",
 		Type:   "exe",
 	}
-	
+
 	// Create a test service
 	testService := collectors.PERunner{
 		Name:     "TestService",
@@ -29,7 +29,7 @@ func MockRunnerGenerator() []collectors.PERunner {
 		Exe:      testExe,
 		Context:  systemPrincipal,
 	}
-	
+
 	// Create a test scheduled task
 	testTask := collectors.PERunner{
 		Name:     "TestTask",
@@ -39,7 +39,7 @@ func MockRunnerGenerator() []collectors.PERunner {
 		Exe:      testExe,
 		Context:  systemPrincipal,
 	}
-	
+
 	// Create a test autorun entry
 	testAutorun := collectors.PERunner{
 		Name:     "TestAutorun",
@@ -49,6 +49,6 @@ func MockRunnerGenerator() []collectors.PERunner {
 		Exe:      testExe,
 		Context:  systemPrincipal,
 	}
-	
+
 	return []collectors.PERunner{testService, testTask, testAutorun}
 }

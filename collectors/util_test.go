@@ -13,7 +13,7 @@ func createMockTempDir(t *testing.T) (string, func()) {
 	}
 
 	// Create a basic directory structure for testing
-	testDirPath := filepath.Join(tempDir, "test_dir")
+	testDirPath := filepath.Join(tempDir, "testdata")
 	err = os.MkdirAll(testDirPath, 0755)
 	if err != nil {
 		os.RemoveAll(tempDir)
