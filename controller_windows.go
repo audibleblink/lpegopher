@@ -35,10 +35,11 @@ func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
 			path := filepath.Join(args.Collect.Root, f.Name())
 			log.Debugf("forking collection of %s", path)
 			wg.Add(1)
-			go func(startPath string) {
+			startPath := path // Copy loop variable to avoid capture issues in Go 1.22+
+			go func() {
 				defer wg.Done()
 				collectors.PEs(startPath)
-			}(path)
+			}()
 
 		}
 	}

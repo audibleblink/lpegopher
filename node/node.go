@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
@@ -295,7 +296,18 @@ func NewNodeSchema(tx neo4j.Transaction) *NodeSchema {
 
 // CreateUniqueConstraints creates unique constraints for all node types in the schema
 func (ns *NodeSchema) CreateUniqueConstraints() error {
-	for nodeType, prop := range Schema.UniqueConstraints {
+	// Get all node types as a slice
+	nodeTypes := make([]string, 0, len(Schema.UniqueConstraints))
+	for nodeType := range Schema.UniqueConstraints {
+		nodeTypes = append(nodeTypes, nodeType)
+	}
+	
+	// Sort the node types for deterministic processing order
+	slices.Sort(nodeTypes)
+	
+	// Process each node type in order
+	for _, nodeType := range nodeTypes {
+		prop := Schema.UniqueConstraints[nodeType]
 		query := fmt.Sprintf(Schema.UniqueConstraintTemplate, nodeType, prop)
 		if _, err := ns.tx.Run(query, nil); err != nil {
 			return fmt.Errorf("failed to create unique constraint for %s.%s: %w", nodeType, prop, err)
@@ -306,8 +318,25 @@ func (ns *NodeSchema) CreateUniqueConstraints() error {
 
 // CreateBTreeIndices creates BTree indices for all node types in the schema
 func (ns *NodeSchema) CreateBTreeIndices() error {
-	for nodeType, props := range Schema.BTREEIndices {
-		for _, prop := range props {
+	// Get all node types as a slice
+	nodeTypes := make([]string, 0, len(Schema.BTREEIndices))
+	for nodeType := range Schema.BTREEIndices {
+		nodeTypes = append(nodeTypes, nodeType)
+	}
+	
+	// Sort the node types for deterministic processing order
+	slices.Sort(nodeTypes)
+	
+	// Process each node type in order
+	for _, nodeType := range nodeTypes {
+		props := Schema.BTREEIndices[nodeType]
+		// Create a copy to sort
+		propsCopy := make([]string, len(props))
+		copy(propsCopy, props)
+		// Sort properties for deterministic processing order
+		slices.Sort(propsCopy)
+		
+		for _, prop := range propsCopy {
 			query := fmt.Sprintf(Schema.BTREEIndexTemplate, nodeType, prop)
 			if _, err := ns.tx.Run(query, nil); err != nil {
 				return fmt.Errorf("failed to create btree index for %s.%s: %w", nodeType, prop, err)
@@ -318,7 +347,7 @@ func (ns *NodeSchema) CreateBTreeIndices() error {
 }
 
 // FormatNodeQuery formats a query based on a template and parameters
-func FormatNodeQuery(template string, params ...interface{}) string {
+func FormatNodeQuery(template string, params ...any) string {
 	query := fmt.Sprintf(template, params...)
 	return strings.TrimSpace(query)
 }

@@ -357,7 +357,7 @@ func TestGetRelationshipTemplate(t *testing.T) {
 // Mock Neo4j Transaction for testing
 type mockTransaction struct{}
 
-func (m *mockTransaction) Run(cypher string, params map[string]interface{}) (neo4j.Result, error) {
+func (m *mockTransaction) Run(cypher string, params map[string]any) (neo4j.Result, error) {
 	if strings.Contains(cypher, "ERROR") {
 		return nil, fmt.Errorf("mock error")
 	}

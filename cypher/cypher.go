@@ -159,7 +159,7 @@ func (q *Query) String() string {
 	return q.b.String()
 }
 
-func (q *Query) txWork(tx neo4j.Transaction) (interface{}, error) {
+func (q *Query) txWork(tx neo4j.Transaction) (any, error) {
 	result, err := tx.Run(q.b.String(), nil)
 	if err != nil {
 		return nil, err
