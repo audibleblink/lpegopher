@@ -31,7 +31,7 @@ func TestINodeMethods(t *testing.T) {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
 		}
 	})
-	
+
 	t.Run("CacheKey returns the correct value", func(t *testing.T) {
 		cacheKey := inode.CacheKey()
 		if cacheKey != "/path/to/test.exe" {
@@ -95,7 +95,7 @@ func TestPrincipalMethods(t *testing.T) {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
 		}
 	})
-	
+
 	t.Run("CacheKey returns the correct value", func(t *testing.T) {
 		cacheKey := principal.CacheKey()
 		if cacheKey != "TestUser" {
@@ -121,7 +121,7 @@ func TestPrincipalMethods(t *testing.T) {
 		if len(fields) < 4 {
 			t.Errorf("Expected at least 4 CSV fields, got %d", len(fields))
 		}
-		
+
 		// Check required fields are present
 		if fields[0] != principal.ID() {
 			t.Errorf("First field should be ID, got %s", fields[0])
@@ -146,7 +146,11 @@ func TestPrincipalMethods(t *testing.T) {
 		}
 
 		if id != principal.ID() {
-			t.Errorf("Write should return the principal ID: expected %s, got %s", principal.ID(), id)
+			t.Errorf(
+				"Write should return the principal ID: expected %s, got %s",
+				principal.ID(),
+				id,
+			)
 		}
 
 		if buf.Len() == 0 {
@@ -175,7 +179,7 @@ func TestRelMethods(t *testing.T) {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
 		}
 	})
-	
+
 	t.Run("CacheKey returns the correct value", func(t *testing.T) {
 		cacheKey := rel.CacheKey()
 		expectedCSV := "start123,CONTAINS,end456\n"
@@ -242,7 +246,7 @@ func TestDepMethods(t *testing.T) {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
 		}
 	})
-	
+
 	t.Run("CacheKey returns the correct value", func(t *testing.T) {
 		cacheKey := dep.CacheKey()
 		if cacheKey != "kernel32.dll" {
@@ -315,7 +319,7 @@ func TestPERunnerMethods(t *testing.T) {
 			t.Errorf("ID should be consistent: got %s and %s", id1, id2)
 		}
 	})
-	
+
 	t.Run("CacheKey returns the correct value", func(t *testing.T) {
 		cacheKey := peRunner.CacheKey()
 		if cacheKey != "TestService" {
@@ -370,38 +374,38 @@ func TestWriteItems(t *testing.T) {
 		{Name: "Administrator", Group: "BUILTIN", Type: "user"},
 		{Name: "Users", Group: "BUILTIN", Type: "group"},
 	}
-	
+
 	// Test WriteItems
 	var buf bytes.Buffer
 	ids := WriteItems(principals, &buf)
-	
+
 	// Check that IDs are returned
 	if len(ids) != len(principals) {
 		t.Errorf("Expected %d IDs, got %d", len(principals), len(ids))
 	}
-	
+
 	for _, id := range ids {
 		if id == "" {
 			t.Error("Expected non-empty ID to be returned")
 		}
 	}
-	
+
 	// Check that some data was written
 	if buf.Len() == 0 {
 		t.Error("Expected data to be written to buffer")
 	}
-	
+
 	// Test writing again - should be cached
 	buf.Reset()
 	ids2 := WriteItems(principals, &buf)
-	
+
 	// IDs should be the same
 	for i, id := range ids {
 		if id != ids2[i] {
 			t.Errorf("Expected same ID to be returned on second write, got %s != %s", id, ids2[i])
 		}
 	}
-	
+
 	// Buffer should be empty as items were cached
 	if buf.Len() > 0 {
 		t.Error("Expected no data to be written for cached items")
@@ -441,3 +445,4 @@ func TestHashFor(t *testing.T) {
 		}
 	})
 }
+

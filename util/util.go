@@ -34,7 +34,6 @@ func PathFix(str string) string {
 }
 
 func resolveEnvPath(path string) (out string) {
-
 	// return the original filepath unchanged unless we get to the end
 	out = path
 

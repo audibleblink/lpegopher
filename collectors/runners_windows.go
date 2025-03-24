@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"golang.org/x/sys/windows"
-	"golang.org/x/sys/windows/registry"
-
 	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/memutils"
+	"github.com/capnspacehook/taskmaster"
+	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
+	"golang.org/x/sys/windows/svc/mgr"
+
 	"github.com/audibleblink/lpegopher/logerr"
 	"github.com/audibleblink/lpegopher/util"
-	"github.com/capnspacehook/taskmaster"
-	"golang.org/x/sys/windows/svc/mgr"
 )
 
 var regKeys = []map[registry.Key]string{
@@ -34,7 +34,11 @@ func Autoruns() {
 	for _, regKey := range regKeys {
 		for key, subKey := range regKey {
 
-			key, err := registry.OpenKey(key, subKey, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
+			key, err := registry.OpenKey(
+				key,
+				subKey,
+				registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS,
+			)
 			if err != nil {
 				log.Debugf("unable to read key: %s", err)
 				continue
@@ -98,7 +102,6 @@ func Tasks() {
 	}
 
 	for _, task := range tasks {
-
 		if task.Enabled {
 
 			var execAction taskmaster.ExecAction
@@ -146,7 +149,11 @@ func Services() {
 	defer logerr.ClearContext()
 
 	var s *uint16
-	h, err := windows.OpenSCManager(s, nil, windows.SC_MANAGER_CONNECT|windows.SC_MANAGER_ENUMERATE_SERVICE)
+	h, err := windows.OpenSCManager(
+		s,
+		nil,
+		windows.SC_MANAGER_CONNECT|windows.SC_MANAGER_ENUMERATE_SERVICE,
+	)
 	if err != nil {
 		log.Error(err.Error())
 		return
@@ -162,7 +169,11 @@ func Services() {
 
 	for _, svcName := range svcNames {
 
-		h, err := windows.OpenService(svcMgr.Handle, windows.StringToUTF16Ptr(svcName), windows.SERVICE_QUERY_CONFIG)
+		h, err := windows.OpenService(
+			svcMgr.Handle,
+			windows.StringToUTF16Ptr(svcName),
+			windows.SERVICE_QUERY_CONFIG,
+		)
 		if err != nil {
 			log.Warnf("failed to open service %s: %s", svcName, err)
 			continue

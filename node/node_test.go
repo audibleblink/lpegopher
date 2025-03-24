@@ -41,7 +41,12 @@ func TestRelationshipConstants(t *testing.T) {
 
 	for expected, actual := range relTypes {
 		if expected != actual {
-			t.Errorf("Expected relationship type constant %s to be %s, got %s", expected, expected, actual)
+			t.Errorf(
+				"Expected relationship type constant %s to be %s, got %s",
+				expected,
+				expected,
+				actual,
+			)
 		}
 	}
 }
@@ -126,7 +131,12 @@ func TestSchemaDefinition(t *testing.T) {
 			continue
 		}
 		if actualProp != prop {
-			t.Errorf("Expected unique constraint for %s to be on property %s, got %s", nodeType, prop, actualProp)
+			t.Errorf(
+				"Expected unique constraint for %s to be on property %s, got %s",
+				nodeType,
+				prop,
+				actualProp,
+			)
 		}
 	}
 
@@ -147,12 +157,23 @@ func TestSchemaDefinition(t *testing.T) {
 			continue
 		}
 		if len(actualProps) != len(expectedProps) {
-			t.Errorf("Expected %d BTREE indices for %s, got %d", len(expectedProps), nodeType, len(actualProps))
+			t.Errorf(
+				"Expected %d BTREE indices for %s, got %d",
+				len(expectedProps),
+				nodeType,
+				len(actualProps),
+			)
 			continue
 		}
 		for i, prop := range expectedProps {
 			if actualProps[i] != prop {
-				t.Errorf("Expected BTREE index %d for %s to be on property %s, got %s", i, nodeType, prop, actualProps[i])
+				t.Errorf(
+					"Expected BTREE index %d for %s to be on property %s, got %s",
+					i,
+					nodeType,
+					prop,
+					actualProps[i],
+				)
 			}
 		}
 	}
@@ -163,8 +184,17 @@ func TestPropMaps(t *testing.T) {
 	expectedProps := map[string][]string{
 		"INode":     {Prop.Nid, Prop.Name, Prop.Path, Prop.Parent, Prop.Owner, Prop.Group},
 		"Principal": {Prop.Nid, Prop.Name, Prop.Group},
-		"Runner":    {Prop.Nid, Prop.Name, Prop.Type, Prop.Path, Prop.Exe, Prop.Parent, Prop.Context, Prop.RunLevel},
-		"Dep":       {Prop.Nid, Prop.Name},
+		"Runner": {
+			Prop.Nid,
+			Prop.Name,
+			Prop.Type,
+			Prop.Path,
+			Prop.Exe,
+			Prop.Parent,
+			Prop.Context,
+			Prop.RunLevel,
+		},
+		"Dep": {Prop.Nid, Prop.Name},
 	}
 
 	// Test INode properties
@@ -202,17 +232,50 @@ func TestCypherTemplates(t *testing.T) {
 		{
 			"CreateExe",
 			CypherTemplates.CreateExe,
-			[]string{"exes.csv", "CREATE", "Exe", "INode", "nid", "name", "path", "parent", "owner", "group"},
+			[]string{
+				"exes.csv",
+				"CREATE",
+				"Exe",
+				"INode",
+				"nid",
+				"name",
+				"path",
+				"parent",
+				"owner",
+				"group",
+			},
 		},
 		{
 			"CreateDll",
 			CypherTemplates.CreateDll,
-			[]string{"dlls.csv", "CREATE", "Dll", "INode", "nid", "name", "path", "parent", "owner", "group"},
+			[]string{
+				"dlls.csv",
+				"CREATE",
+				"Dll",
+				"INode",
+				"nid",
+				"name",
+				"path",
+				"parent",
+				"owner",
+				"group",
+			},
 		},
 		{
 			"CreateDir",
 			CypherTemplates.CreateDir,
-			[]string{"dirs.csv", "CREATE", "Directory", "INode", "nid", "name", "path", "parent", "owner", "group"},
+			[]string{
+				"dirs.csv",
+				"CREATE",
+				"Directory",
+				"INode",
+				"nid",
+				"name",
+				"path",
+				"parent",
+				"owner",
+				"group",
+			},
 		},
 		{
 			"CreateDep",
@@ -227,7 +290,19 @@ func TestCypherTemplates(t *testing.T) {
 		{
 			"CreateRunner",
 			CypherTemplates.CreateRunner,
-			[]string{"runners.csv", "CREATE", "Runner", "nid", "name", "type", "path", "exe", "parent", "context", "runlevel"},
+			[]string{
+				"runners.csv",
+				"CREATE",
+				"Runner",
+				"nid",
+				"name",
+				"type",
+				"path",
+				"exe",
+				"parent",
+				"context",
+				"runlevel",
+			},
 		},
 		{
 			"RelateFileTree",
@@ -270,7 +345,11 @@ func TestCypherTemplates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, expected := range tt.expected {
 				if !strings.Contains(tt.template, expected) {
-					t.Errorf("Expected %s template to contain %q, but it doesn't", tt.name, expected)
+					t.Errorf(
+						"Expected %s template to contain %q, but it doesn't",
+						tt.name,
+						expected,
+					)
 				}
 			}
 		})
@@ -281,7 +360,7 @@ func TestFormatNodeQuery(t *testing.T) {
 	template := "MATCH (n:%s) WHERE n.%s = '%s' RETURN n"
 	result := FormatNodeQuery(template, "Person", "name", "John Doe")
 	expected := "MATCH (n:Person) WHERE n.name = 'John Doe' RETURN n"
-	
+
 	if result != expected {
 		t.Errorf("Expected FormatNodeQuery to return %q, got %q", expected, result)
 	}
@@ -300,13 +379,16 @@ func TestGetTemplateForNodeType(t *testing.T) {
 		{Runner, false},
 		{"UnknownType", true},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.nodeType, func(t *testing.T) {
 			template, err := GetTemplateForNodeType(tt.nodeType)
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Expected GetTemplateForNodeType to return error for type %q, but it didn't", tt.nodeType)
+					t.Errorf(
+						"Expected GetTemplateForNodeType to return error for type %q, but it didn't",
+						tt.nodeType,
+					)
 				}
 			} else {
 				if err != nil {
@@ -334,13 +416,16 @@ func TestGetRelationshipTemplate(t *testing.T) {
 		{ImportedBy, false},
 		{"UnknownRelationship", true},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.relType, func(t *testing.T) {
 			template, err := GetRelationshipTemplate(tt.relType)
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("Expected GetRelationshipTemplate to return error for type %q, but it didn't", tt.relType)
+					t.Errorf(
+						"Expected GetRelationshipTemplate to return error for type %q, but it didn't",
+						tt.relType,
+					)
 				}
 			} else {
 				if err != nil {
@@ -379,16 +464,17 @@ func (m *mockTransaction) Close() error {
 func TestNodeSchema(t *testing.T) {
 	mockTx := &mockTransaction{}
 	schema := NewNodeSchema(mockTx)
-	
+
 	// Test CreateUniqueConstraints
 	err := schema.CreateUniqueConstraints()
 	if err != nil {
 		t.Errorf("Unexpected error from CreateUniqueConstraints: %v", err)
 	}
-	
+
 	// Test CreateBTreeIndices
 	err = schema.CreateBTreeIndices()
 	if err != nil {
 		t.Errorf("Unexpected error from CreateBTreeIndices: %v", err)
 	}
 }
+

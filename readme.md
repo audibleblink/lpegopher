@@ -7,11 +7,12 @@ runners to determine privilege escalation paths and persistence mechanisms via r
 using Neo4j.
 
 The program has 2 modes:
+
 - collector
 - processor
 
-
 ## Collector
+
 _collector code in: ./collectors_
 
 ```sh
@@ -21,19 +22,20 @@ _collector code in: ./collectors_
 This mode must be run on windows. It collects PEs, their file tree, OS Principals, and Runners.
 
 ### Runners
+
 Sources collected for auto-execution
+
 - Services
 - Run Keys
 - Tasks
 - Currently running processes
 
-
 ### PEs, Dirs, and ACLs
+
 Starting at args passed as `<root_dir>`, this will recursively traverse the file tree, collecting
 all PE's, their Directories, and all corresponding ACLs for later analysis w/ Neo4j.
 
 ## Processor
-
 
 ```sh
 Usage: lpegopher process [flags] DIR
@@ -59,8 +61,7 @@ together. There are two options to getting the data into neo4j.
    processing command
 2. Use the `--http` flag to start a file server on IP:PORT. Instead of instructing neo4j to seed
    from the server's local `import` directory, neo4j will be pointed to the http server and process
-   the files from there. 
+   the files from there.
 
 In either case, the database connection details must be configured, either with CLI flags of ENV
-variables. See the usage instructions for variable names. 
-
+variables. See the usage instructions for variable names.

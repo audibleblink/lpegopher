@@ -39,13 +39,13 @@ const (
 
 // Relationship type constants
 const (
-	Contains      = "CONTAINS"       // Directory contains a file or subdirectory
-	Owns          = "OWNS"           // Principal owns a node
-	MemberOf      = "MEMBER_OF"      // User is a member of a group
-	HostsPesFor   = "HOSTS_PES_FOR"  // Directory hosts executables for a runner
-	RunsAs        = "RUNS_AS"        // Runner runs as a principal
-	ExecutedBy    = "EXECUTED_BY"    // Executable is executed by a runner
-	ImportedBy    = "IMPORTED_BY"    // Dependency is imported by a node
+	Contains    = "CONTAINS"      // Directory contains a file or subdirectory
+	Owns        = "OWNS"          // Principal owns a node
+	MemberOf    = "MEMBER_OF"     // User is a member of a group
+	HostsPesFor = "HOSTS_PES_FOR" // Directory hosts executables for a runner
+	RunsAs      = "RUNS_AS"       // Runner runs as a principal
+	ExecutedBy  = "EXECUTED_BY"   // Executable is executed by a runner
+	ImportedBy  = "IMPORTED_BY"   // Dependency is imported by a node
 )
 
 // Basic property name constants for nodes
@@ -164,20 +164,20 @@ var PropMaps = struct {
 // Cypher query templates for node operations
 var CypherTemplates = struct {
 	// Node creation templates
-	CreateExe      string
-	CreateDll      string
-	CreateDir      string
-	CreateDep      string
+	CreateExe       string
+	CreateDll       string
+	CreateDir       string
+	CreateDep       string
 	CreatePrincipal string
-	CreateRunner   string
+	CreateRunner    string
 	// Relationship creation templates
-	RelateFileTree string
-	RelateOwnership string
-	RelateMembership string
-	RelateRunnerDir string
+	RelateFileTree        string
+	RelateOwnership       string
+	RelateMembership      string
+	RelateRunnerDir       string
 	RelateRunnerPrincipal string
-	RelateRunnerExe string
-	RelateDependency string
+	RelateRunnerExe       string
+	RelateDependency      string
 }{
 	CreateExe: `LOAD CSV FROM '%s/exes.csv' AS line
 		WITH line
@@ -188,7 +188,7 @@ var CypherTemplates = struct {
 			parent: line[3],
 			owner: line[4],
 			group: line[5] })`,
-			
+
 	CreateDll: `LOAD CSV FROM '%s/dlls.csv' AS line
 		WITH line
 		CREATE (:Dll:INode {
@@ -198,7 +198,7 @@ var CypherTemplates = struct {
 			parent: line[3],
 			owner: line[4],
 			group: line[5] })`,
-			
+
 	CreateDir: `LOAD CSV FROM '%s/dirs.csv' AS line
 		WITH line
 		CREATE (:Directory:INode {
@@ -208,13 +208,13 @@ var CypherTemplates = struct {
 			parent: line[3],
 			owner: line[4],
 			group: line[5] })`,
-			
+
 	CreateDep: `LOAD CSV FROM '%s/deps.csv' AS line
 		WITH line CREATE (:Dep {nid: line[0], name: line[1]})`,
-		
+
 	CreatePrincipal: `LOAD CSV FROM '%s/principals.csv' AS line
 		WITH line CREATE (:Principal {nid: line[0], name: line[1], group: line[2]})`,
-		
+
 	CreateRunner: `LOAD CSV FROM '%s/runners.csv' AS line
 		WITH line
 		CREATE (e:Runner {
@@ -226,14 +226,14 @@ var CypherTemplates = struct {
 			parent: line[5],
 			context: line[6],
 			runlevel: line[7]})`,
-			
+
 	RelateFileTree: `
 		CALL apoc.periodic.iterate(
 			"MATCH (node:%s),(dir:Directory) WHERE node.parent = dir.path RETURN node,dir",
 			"MERGE (dir)-[:CONTAINS]->(node)",
 			{batchSize:1000})
 		`,
-		
+
 	RelateOwnership: `
 		CALL apoc.periodic.iterate("
 			MATCH (pcpl:Principal),(inode:INode) 
@@ -243,7 +243,7 @@ var CypherTemplates = struct {
 			MERGE (pcpl)-[:OWNS]->(inode)
 		", {batchSize: 1000})
 		`,
-		
+
 	RelateMembership: `
 		CALL apoc.periodic.iterate("
 			MATCH (group:Principal),(user:Principal) 
@@ -253,28 +253,28 @@ var CypherTemplates = struct {
 			MERGE (user)-[:MEMBER_OF]->(group)
 		", {batchSize: 10})
 		`,
-		
+
 	RelateRunnerDir: `
 		CALL apoc.periodic.iterate(
 			"MATCH (r:Runner),(dir:Directory) WHERE r.parent = dir.path RETURN r,dir",
 			"MERGE (dir)-[:HOSTS_PES_FOR]->(r)",
 			{batchSize:100, parallel: true, iterateList:true})
 		`,
-		
+
 	RelateRunnerPrincipal: `
 		CALL apoc.periodic.iterate(
 			"MATCH (r:Runner),(p:Principal) WHERE r.context = p.name RETURN r,p",
 			"MERGE (r)-[:RUNS_AS]->(p)",
 			{batchSize:100, iterateList: true})
 		`,
-		
+
 	RelateRunnerExe: `
 		CALL apoc.periodic.iterate(
 			"MATCH (r:Runner),(exe:Exe) WHERE r.parent+'/'+r.exe = exe.path RETURN r,exe",
 			"MERGE (exe)-[:EXECUTED_BY]->(r)",
 			{batchSize:100})
 		`,
-		
+
 	RelateDependency: `CALL apoc.periodic.iterate("
 			LOAD CSV FROM '%s/imports.csv' AS line RETURN line
 		","
@@ -301,16 +301,21 @@ func (ns *NodeSchema) CreateUniqueConstraints() error {
 	for nodeType := range Schema.UniqueConstraints {
 		nodeTypes = append(nodeTypes, nodeType)
 	}
-	
+
 	// Sort the node types for deterministic processing order
 	slices.Sort(nodeTypes)
-	
+
 	// Process each node type in order
 	for _, nodeType := range nodeTypes {
 		prop := Schema.UniqueConstraints[nodeType]
 		query := fmt.Sprintf(Schema.UniqueConstraintTemplate, nodeType, prop)
 		if _, err := ns.tx.Run(query, nil); err != nil {
-			return fmt.Errorf("failed to create unique constraint for %s.%s: %w", nodeType, prop, err)
+			return fmt.Errorf(
+				"failed to create unique constraint for %s.%s: %w",
+				nodeType,
+				prop,
+				err,
+			)
 		}
 	}
 	return nil
@@ -323,10 +328,10 @@ func (ns *NodeSchema) CreateBTreeIndices() error {
 	for nodeType := range Schema.BTREEIndices {
 		nodeTypes = append(nodeTypes, nodeType)
 	}
-	
+
 	// Sort the node types for deterministic processing order
 	slices.Sort(nodeTypes)
-	
+
 	// Process each node type in order
 	for _, nodeType := range nodeTypes {
 		props := Schema.BTREEIndices[nodeType]
@@ -335,7 +340,7 @@ func (ns *NodeSchema) CreateBTreeIndices() error {
 		copy(propsCopy, props)
 		// Sort properties for deterministic processing order
 		slices.Sort(propsCopy)
-		
+
 		for _, prop := range propsCopy {
 			query := fmt.Sprintf(Schema.BTREEIndexTemplate, nodeType, prop)
 			if _, err := ns.tx.Run(query, nil); err != nil {

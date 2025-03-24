@@ -20,7 +20,7 @@ func execString(query string) error {
 // InsertAllRunners loads runner data into the graph database
 func InsertAllRunners(stageURL string) (err error) {
 	log := logerr.Add("runner inserts")
-	
+
 	template, _ := node.GetTemplateForNodeType(node.Runner)
 	err = execString(fmt.Sprintf(template, dataPrefix(stageURL)))
 	if err != nil {
@@ -62,8 +62,7 @@ func BulkRelateRunners() (err error) {
 
 func dataPrefix(url string) (uri string) {
 	if url == "" {
-		return fmt.Sprintf("file://")
-	} else {
-		return fmt.Sprintf("http://%s", url)
+		return "file://"
 	}
+	return fmt.Sprintf("http://%s", url)
 }

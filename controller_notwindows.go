@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/alexflint/go-arg"
+
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/logerr"
 )

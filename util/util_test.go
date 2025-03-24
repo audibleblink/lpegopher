@@ -162,17 +162,30 @@ func TestSmoothBrainPath(t *testing.T) {
 		expectedBin  string
 		expectedArgs string
 	}{
-		{`"C:\Program Files\App\app.exe" --config=test.json`, "C:\\Program Files\\App\\app.exe", "--config=test.json"},
-		{`C:\Windows\System32\cmd.exe /c echo hello`, "C:\\Windows\\System32\\cmd.exe", "/c echo hello"},
-		{`C:\Windows\rundll32.exe shell32.dll,Control_RunDLL`, "C:\\Windows\\rundll32.exe", "shell32.dll,Control_RunDLL"},
+		{
+			`"C:\Program Files\App\app.exe" --config=test.json`,
+			"C:\\Program Files\\App\\app.exe",
+			"--config=test.json",
+		},
+		{
+			`C:\Windows\System32\cmd.exe /c echo hello`,
+			"C:\\Windows\\System32\\cmd.exe",
+			"/c echo hello",
+		},
+		{
+			`C:\Windows\rundll32.exe shell32.dll,Control_RunDLL`,
+			"C:\\Windows\\rundll32.exe",
+			"shell32.dll,Control_RunDLL",
+		},
 		{`program.exe arg1 arg2`, "program.exe", "arg1 arg2"},
 	}
 
 	for _, test := range tests {
 		bin, args := SmoothBrainPath(test.cmdline)
 		if bin != test.expectedBin || args != test.expectedArgs {
-			t.Errorf("SmoothBrainPath(%q) = (%q, %q), expected (%q, %q)", 
+			t.Errorf("SmoothBrainPath(%q) = (%q, %q), expected (%q, %q)",
 				test.cmdline, bin, args, test.expectedBin, test.expectedArgs)
 		}
 	}
 }
+

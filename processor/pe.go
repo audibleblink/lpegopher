@@ -59,7 +59,7 @@ func InsertAllNodes(stageURL string) (err error) {
 func BulkRelateFileTree() (err error) {
 	log := logerr.Add("filetree relationships")
 	template, _ := node.GetRelationshipTemplate(node.Contains)
-	
+
 	for _, typ := range []string{node.Dir, node.Exe, node.Dll} {
 		log.Debugf("relating all (:Dir)-[:%s]-(:%s)", node.Contains, typ)
 		err = execString(fmt.Sprintf(template, typ))
@@ -74,7 +74,7 @@ func BulkRelateFileTree() (err error) {
 func RelateOwnership() (err error) {
 	log := logerr.Add("ownership creation")
 	log.Debugf("relating all (:Principal)-[:%s]-(:INode)", node.Owns)
-	
+
 	template, _ := node.GetRelationshipTemplate(node.Owns)
 	err = execString(template)
 	if err != nil {
@@ -87,7 +87,7 @@ func RelateOwnership() (err error) {
 func RelateMembership() (err error) {
 	log := logerr.Add("membership creation")
 	log.Debugf("relating all (:Principal)-[:%s]-(:Principal)", node.MemberOf)
-	
+
 	template, _ := node.GetRelationshipTemplate(node.MemberOf)
 	err = execString(template)
 	if err != nil {
@@ -100,7 +100,7 @@ func RelateMembership() (err error) {
 func RelateACLs(stageURL string) (err error) {
 	log := logerr.Add("acl relationships")
 	log.Debug("relating all (:Principal)-[$ACE]-(:INodes)")
-	
+
 	// ACL relationships are custom and don't use a specific relationship type
 	query := `CALL apoc.periodic.iterate("
 			LOAD CSV FROM '%s/relationships.csv' AS line RETURN line
@@ -120,7 +120,7 @@ func RelateACLs(stageURL string) (err error) {
 func RelateDependecies(stageURL string) (err error) {
 	log := logerr.Add("dependecy relationships")
 	log.Debugf("relating (:INode)-[:%s]-(:Dep)", node.ImportedBy)
-	
+
 	template, _ := node.GetRelationshipTemplate(node.ImportedBy)
 	err = execString(fmt.Sprintf(template, dataPrefix(stageURL)))
 	if err != nil {

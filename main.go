@@ -5,11 +5,12 @@ import (
 	"os"
 
 	"github.com/alexflint/go-arg"
+	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
+
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/cypher"
 	"github.com/audibleblink/lpegopher/logerr"
 	"github.com/audibleblink/lpegopher/node"
-	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 )
 
 // Global variables
@@ -100,16 +101,16 @@ func dbCreateIndices() error {
 	defer tx.Rollback()
 
 	log.Debug("creating indices")
-	
+
 	// Use the node package to create all schema constraints and indices
 	nodeSchema := node.NewNodeSchema(tx)
-	
+
 	// Create unique constraints
 	log.Debug("creating unique constraints")
 	if err := nodeSchema.CreateUniqueConstraints(); err != nil {
 		return log.Wrap(err)
 	}
-	
+
 	// Create btree indices
 	log.Debug("creating btree indices")
 	if err := nodeSchema.CreateBTreeIndices(); err != nil {

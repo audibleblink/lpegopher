@@ -1,8 +1,9 @@
 package collectors
 
 import (
-	"github.com/audibleblink/lpegopher/logerr"
 	winapi "github.com/gueencode/go-win64api"
+
+	"github.com/audibleblink/lpegopher/logerr"
 )
 
 func CreateGroupPrincipals() error {
