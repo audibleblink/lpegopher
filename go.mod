@@ -9,6 +9,7 @@ require (
 	github.com/alexflint/go-arg v1.5.1
 	github.com/audibleblink/concurrent-writer v0.1.0
 	github.com/audibleblink/getsystem v0.2.0
+	github.com/audibleblink/go-winacl v0.4.0
 	github.com/audibleblink/logerr v0.0.1
 	github.com/audibleblink/memutils v0.1.0
 	github.com/capnspacehook/taskmaster v0.0.0-20210519235353-1629df7c85e9
@@ -37,6 +38,7 @@ require (
 	github.com/C-Sto/BananaPhone v0.0.0-20220220002628-6585e5913761 // indirect
 	github.com/Velocidex/json v0.0.0-20220224052537-92f3c0326e5a // indirect
 	github.com/Velocidex/yaml/v2 v2.2.8 // indirect
+	github.com/audibleblink/bamflags v1.0.0 // indirect
 	github.com/awgh/rawreader v0.0.0-20200626064944-56820a9c6da4 // indirect
 	github.com/google/cabbie v1.0.5 // indirect
 	github.com/google/glazier v0.0.0-20250206012449-11bfd5868908 // indirect
