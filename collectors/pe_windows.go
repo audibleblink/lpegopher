@@ -6,15 +6,16 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"winacl"
 
 	"github.com/Microsoft/go-winio"
-	"github.com/audibleblink/lpegopher/logerr"
-	"github.com/audibleblink/lpegopher/node"
-	"github.com/audibleblink/lpegopher/util"
+	"github.com/audibleblink/go-winacl"
 	"golang.org/x/sys/windows"
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"
+
+	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/lpegopher/node"
+	"github.com/audibleblink/lpegopher/util"
 )
 
 func PEs(dir string) {
@@ -144,7 +145,11 @@ func pullDACL(path string) (DACL, error) {
 }
 
 func securityDescriptorFor(path string) (sd winacl.NtSecurityDescriptor, err error) {
-	winSD, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	winSD, err := windows.GetNamedSecurityInfo(
+		path,
+		windows.SE_FILE_OBJECT,
+		windows.DACL_SECURITY_INFORMATION,
+	)
 	if !winSD.IsValid() {
 		return sd, fmt.Errorf("invalid security descriptor %s", err)
 	}
@@ -207,7 +212,6 @@ func handleDirPerms(report *INode) error {
 }
 
 func doPrint(report *INode) {
-
 	var nodeID string
 	switch report.Type {
 	case node.Exe:
