@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 	"golang.org/x/sys/windows/svc/mgr"
 
-	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/logerr"
 	"github.com/audibleblink/lpegopher/util"
 )
 

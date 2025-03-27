@@ -11,7 +11,7 @@ import (
 
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/collectors"
-	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/logerr"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {

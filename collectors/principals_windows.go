@@ -3,7 +3,7 @@ package collectors
 import (
 	winapi "github.com/gueencode/go-win64api"
 
-	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/logerr"
 )
 
 func CreateGroupPrincipals() error {

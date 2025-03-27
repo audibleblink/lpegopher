@@ -9,7 +9,7 @@ import (
 
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/cypher"
-	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/logerr"
 	"github.com/audibleblink/lpegopher/node"
 )
 

@@ -10,7 +10,7 @@ require (
 	github.com/audibleblink/concurrent-writer v0.1.0
 	github.com/audibleblink/getsystem v0.2.0
 	github.com/audibleblink/go-winacl v0.4.0
-	github.com/audibleblink/logerr v0.0.1
+	github.com/audibleblink/logerr v0.1.0
 	github.com/audibleblink/memutils v0.1.0
 	github.com/capnspacehook/taskmaster v0.0.0-20210519235353-1629df7c85e9
 	github.com/gueencode/go-win64api v0.0.0-20211213220644-17b0170c4e3d

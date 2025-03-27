@@ -7,7 +7,7 @@ import (
 
 	"github.com/audibleblink/concurrent-writer"
 
-	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/logerr"
 )
 
 // Constants for file paths used for outputs

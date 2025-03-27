@@ -13,7 +13,7 @@ import (
 	"www.velocidex.com/golang/binparsergen/reader"
 	"www.velocidex.com/golang/go-pe"
 
-	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/logerr"
 	"github.com/audibleblink/lpegopher/node"
 	"github.com/audibleblink/lpegopher/util"
 )

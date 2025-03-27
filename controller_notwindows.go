@@ -8,7 +8,7 @@ import (
 	"github.com/alexflint/go-arg"
 
 	"github.com/audibleblink/lpegopher/args"
-	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/logerr"
 )
 
 func doCollectCmd(a args.ArgType, cli *arg.Parser) error {

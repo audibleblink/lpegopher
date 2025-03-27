@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/audibleblink/lpegopher/logerr"
+	"github.com/audibleblink/logerr"
 )
 
 // Create a mock version of neo4j.Driver that doesn't need a real database connection
