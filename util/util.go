@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"runtime"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -55,14 +56,27 @@ func resolveEnvPath(path string) (out string) {
 		return
 	}
 
-	// env var value will use os path separator
-	remainder := filepath.FromSlash(trim[i+1:])
-
-	// check the remainder starts with path separateor
-	if !strings.HasPrefix(remainder, "\\") {
+	// Get the remainder after the second %
+	remainder := trim[i+1:]
+	
+	// Check for forward slash path format
+	if strings.HasPrefix(trim[i+1:], "/") {
 		return
 	}
 
+	// Convert backslashes to the OS-specific path separator if not on Windows
+	if runtime.GOOS != "windows" {
+		remainder = strings.ReplaceAll(remainder, "\\", string(os.PathSeparator))
+	} else {
+		remainder = filepath.FromSlash(remainder)
+	}
+
+	// Check if the remainder starts with path separator
+	if !strings.HasPrefix(remainder, string(os.PathSeparator)) && !strings.HasPrefix(remainder, "\\") {
+		// Don't replace if it doesn't start with a path separator
+		return
+	}
+	
 	// prepend the value to the remainder of the path
 	return val + remainder
 }
@@ -86,12 +100,28 @@ func EvaluatePath(path string) (out string) {
 	if !ok {
 		return
 	}
-	// env var value will use os path separator
-	remainder := filepath.FromSlash(trim[i+1:])
-	// check the remainder starts with path separateor
-	if !strings.HasPrefix(remainder, "\\") {
+	
+	// Get the remainder after the second %
+	remainder := trim[i+1:]
+	
+	// Check for forward slash path format
+	if strings.HasPrefix(trim[i+1:], "/") {
 		return
 	}
+
+	// Convert backslashes to the OS-specific path separator if not on Windows
+	if runtime.GOOS != "windows" {
+		remainder = strings.ReplaceAll(remainder, "\\", string(os.PathSeparator))
+	} else {
+		remainder = filepath.FromSlash(remainder)
+	}
+	
+	// Check if the remainder starts with path separator
+	if !strings.HasPrefix(remainder, string(os.PathSeparator)) && !strings.HasPrefix(remainder, "\\") {
+		// Don't replace if it doesn't start with a path separator
+		return
+	}
+	
 	// prepend the value to the remainder of the path
 	return val + remainder
 }
@@ -103,7 +133,6 @@ func LineCount(r io.Reader) (int, error) {
 	count := 0
 
 	for {
-
 		byteCount, err := r.Read(buffer)
 		count += bytes.Count(buffer[:byteCount], lineSep)
 
@@ -113,7 +142,6 @@ func LineCount(r io.Reader) (int, error) {
 		case err != nil:
 			return count, err
 		}
-
 	}
 }
 
@@ -143,18 +171,35 @@ func SmoothBrainPath(cmdline string) (bin, args string) {
 	if strings.HasPrefix(cmdline, `"`) {
 		quoteCharOffset := 1
 		secondQuoteIdx := strings.Index(cmdline[quoteCharOffset:], `"`)
-		endOfCmd := len(cmdline) - len(cmdline[secondQuoteIdx:]) + quoteCharOffset
+		if secondQuoteIdx == -1 {
+			// If no closing quote is found, return the entire cmdline as the binary
+			return cmdline, ""
+		}
+		endOfCmd := quoteCharOffset + secondQuoteIdx
 		bin = cmdline[quoteCharOffset:endOfCmd]
-		args = strings.TrimSpace(cmdline[endOfCmd+quoteCharOffset:])
+		if len(cmdline) > endOfCmd+1 {
+			args = strings.TrimSpace(cmdline[endOfCmd+1:])
+		}
 		return
 	}
 
 	splitCmd := strings.Split(cmdline, " ")
+	
+	// Default to first part being the binary if no .exe/.dll is found
+	bin = splitCmd[0]
+	if len(splitCmd) > 1 {
+		args = strings.Join(splitCmd[1:], " ")
+	}
 
 	for idx, part := range splitCmd {
 		if strings.HasSuffix(part, ".exe") || strings.HasSuffix(part, ".dll") {
 			bin = strings.Join(splitCmd[0:idx+1], " ")
-			args = strings.Join(splitCmd[idx+1:], " ")
+			if idx+1 < len(splitCmd) {
+				args = strings.Join(splitCmd[idx+1:], " ")
+			} else {
+				args = ""
+			}
+			break
 		}
 	}
 

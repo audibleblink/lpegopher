@@ -37,8 +37,6 @@ github.com/audibleblink/getsystem v0.2.0 h1:NRNiIebRRpSsT2WWTZRkTnsQ/kPB0EIr8/ES
 github.com/audibleblink/getsystem v0.2.0/go.mod h1:zJlb3KU1sZela9pFOHFipexRN49hdffgnGdm9VNvsGc=
 github.com/audibleblink/go-winacl v0.4.0 h1:IXZYNSkMRdq4iqEf/Ue9qudAMk3RfSYBNyqD10nyM8c=
 github.com/audibleblink/go-winacl v0.4.0/go.mod h1:SFa61pnCbmu5m+ks19rW7CS4qHFHyrtw0b9B4iqEPw4=
-github.com/audibleblink/logerr v0.0.1 h1:0wpNrVhVUNJLLVVZ2lih7cD6fQHWnXfMVTNBwublAQU=
-github.com/audibleblink/logerr v0.0.1/go.mod h1:xShhw+Esm4ppSOE+BrYTHorWABH/dUqaDvHloLhugFQ=
 github.com/audibleblink/logerr v0.1.0 h1:E29IipFh/l6ZVoa5BgrVN7+K2S6m28XjUfBWC7GFpiY=
 github.com/audibleblink/logerr v0.1.0/go.mod h1:oKI7q8CzYzLdf96i7l/4QSBIJiUD3NBr64x4KVzuiSI=
 github.com/audibleblink/memutils v0.1.0 h1:q0g6x/PFiDOIliS65D4EtUMfaD3B6K/A1FxYysw07R0=

@@ -4,7 +4,7 @@ toolchain go1.23.6
 
 use (
 	.
-	../winacl
+	../go-winacl
 )
 
-replace github.com/audibleblink/go-winacl v0.4.0 => ../winacl
+replace github.com/audibleblink/go-winacl v0.4.0 => ../go-winacl

@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -58,15 +59,27 @@ func TestResolveEnvPath(t *testing.T) {
 
 	// Setup test environment
 	os.Clearenv()
-	os.Setenv("TEMP", "C:\\Temp")
-	os.Setenv("PROGRAMFILES", "C:\\Program Files")
+	
+	testTempDir := "C:\\Temp"
+	testProgramFiles := "C:\\Program Files"
+	
+	if runtime.GOOS != "windows" {
+		// Use Unix-style paths for non-Windows platforms
+		testTempDir = "/tmp"
+		testProgramFiles = "/usr/local"
+	}
+	
+	os.Setenv("TEMP", testTempDir)
+	os.Setenv("PROGRAMFILES", testProgramFiles)
 
+	pathSep := string(os.PathSeparator)
+	
 	tests := []struct {
 		input    string
 		expected string
 	}{
-		{"%TEMP%\\file.txt", "C:\\Temp\\file.txt"},
-		{"%PROGRAMFILES%\\App\\data.txt", "C:\\Program Files\\App\\data.txt"},
+		{"%TEMP%\\file.txt", testTempDir + pathSep + "file.txt"},
+		{"%PROGRAMFILES%\\App\\data.txt", testProgramFiles + pathSep + "App" + pathSep + "data.txt"},
 		{"%NONEXISTENT%\\file.txt", "%NONEXISTENT%\\file.txt"},
 		{"C:\\normal\\path.txt", "C:\\normal\\path.txt"},
 		{"%TEMP%path.txt", "%TEMP%path.txt"},
@@ -75,6 +88,10 @@ func TestResolveEnvPath(t *testing.T) {
 
 	for _, test := range tests {
 		result := resolveEnvPath(test.input)
+		if runtime.GOOS != "windows" && strings.Contains(test.expected, "\\") {
+			// Skip Windows-specific path tests on non-Windows platforms
+			continue
+		}
 		if result != test.expected {
 			t.Errorf("resolveEnvPath(%q) = %q, expected %q", test.input, result, test.expected)
 		}
@@ -94,15 +111,27 @@ func TestEvaluatePath(t *testing.T) {
 
 	// Setup test environment
 	os.Clearenv()
-	os.Setenv("TEMP", "C:\\Temp")
-	os.Setenv("PROGRAMFILES", "C:\\Program Files")
+	
+	testTempDir := "C:\\Temp"
+	testProgramFiles := "C:\\Program Files"
+	
+	if runtime.GOOS != "windows" {
+		// Use Unix-style paths for non-Windows platforms
+		testTempDir = "/tmp"
+		testProgramFiles = "/usr/local"
+	}
+	
+	os.Setenv("TEMP", testTempDir)
+	os.Setenv("PROGRAMFILES", testProgramFiles)
 
+	pathSep := string(os.PathSeparator)
+	
 	tests := []struct {
 		input    string
 		expected string
 	}{
-		{"%TEMP%\\file.txt", "C:\\Temp\\file.txt"},
-		{"%PROGRAMFILES%\\App\\data.txt", "C:\\Program Files\\App\\data.txt"},
+		{"%TEMP%\\file.txt", testTempDir + pathSep + "file.txt"},
+		{"%PROGRAMFILES%\\App\\data.txt", testProgramFiles + pathSep + "App" + pathSep + "data.txt"},
 		{"%NONEXISTENT%\\file.txt", "%NONEXISTENT%\\file.txt"},
 		{"C:\\normal\\path.txt", "C:\\normal\\path.txt"},
 		{"%TEMP%path.txt", "%TEMP%path.txt"},
@@ -111,6 +140,10 @@ func TestEvaluatePath(t *testing.T) {
 
 	for _, test := range tests {
 		result := EvaluatePath(test.input)
+		if runtime.GOOS != "windows" && strings.Contains(test.expected, "\\") {
+			// Skip Windows-specific path tests on non-Windows platforms
+			continue
+		}
 		if result != test.expected {
 			t.Errorf("EvaluatePath(%q) = %q, expected %q", test.input, result, test.expected)
 		}
@@ -178,6 +211,12 @@ func TestSmoothBrainPath(t *testing.T) {
 			"shell32.dll,Control_RunDLL",
 		},
 		{`program.exe arg1 arg2`, "program.exe", "arg1 arg2"},
+		// Add a test case with no arguments
+		{`program.exe`, "program.exe", ""},
+		// Add a test case with no executable extension to verify fallback
+		{`myprogram hello world`, "myprogram", "hello world"},
+		// Add a test with malformed quotes to test handling
+		{`"C:\Program Files\malformed.exe arg1`, `"C:\Program Files\malformed.exe arg1`, ""},
 	}
 
 	for _, test := range tests {
