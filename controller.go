@@ -58,9 +58,15 @@ func doProcessCmd(args args.ArgType, cli *arg.Parser) (err error) {
 
 	log.Info("creating ACL relationships")
 	err = processor.RelateACLs(args.Process.HTTP)
+	if err != nil {
+		return
+	}
 
 	log.Info("creating user/group memberships")
 	err = processor.RelateMembership()
+	if err != nil {
+		return
+	}
 
 	log.Info("postprocessing complete")
 	return
