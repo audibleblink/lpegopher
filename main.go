@@ -7,9 +7,9 @@ import (
 	"github.com/alexflint/go-arg"
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 
+	"github.com/audibleblink/logerr"
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/cypher"
-	"github.com/audibleblink/logerr"
 	"github.com/audibleblink/lpegopher/node"
 )
 
