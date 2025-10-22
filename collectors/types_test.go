@@ -445,4 +445,3 @@ func TestHashFor(t *testing.T) {
 		}
 	})
 }
-

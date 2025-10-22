@@ -36,4 +36,3 @@ func TestDataPrefix(t *testing.T) {
 		})
 	}
 }
-

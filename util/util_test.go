@@ -188,4 +188,3 @@ func TestSmoothBrainPath(t *testing.T) {
 		}
 	}
 }
-

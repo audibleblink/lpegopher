@@ -3,8 +3,8 @@ package processor
 import (
 	"fmt"
 
-	"github.com/audibleblink/lpegopher/cypher"
 	"github.com/audibleblink/logerr"
+	"github.com/audibleblink/lpegopher/cypher"
 	"github.com/audibleblink/lpegopher/node"
 )
 

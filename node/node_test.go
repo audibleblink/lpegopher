@@ -477,4 +477,3 @@ func TestNodeSchema(t *testing.T) {
 		t.Errorf("Unexpected error from CreateBTreeIndices: %v", err)
 	}
 }
-

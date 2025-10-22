@@ -9,9 +9,9 @@ import (
 	"github.com/audibleblink/getsystem"
 	"github.com/audibleblink/memutils"
 
+	"github.com/audibleblink/logerr"
 	"github.com/audibleblink/lpegopher/args"
 	"github.com/audibleblink/lpegopher/collectors"
-	"github.com/audibleblink/logerr"
 )
 
 func doCollectCmd(args args.ArgType, cli *arg.Parser) (err error) {
